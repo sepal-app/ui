@@ -1,0 +1,10 @@
+// Increase the based font size for Elastic UI;
+$euiFontSize: 18px;
+
+@import '~@elastic/eui/src/theme_light.scss';
+
+
+html, body {
+    // The default letter spacing in ElasticUI is a bit tight.
+    letter-spacing: .02em;
+}

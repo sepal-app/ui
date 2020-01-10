@@ -1,3 +1,6 @@
+/* @import "~normalize.css"; */
+
+
 .App {
   text-align: center;
 }
@@ -28,11 +31,20 @@
   color: #61dafb;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.App--container {
+    padding-top: 60px;
+}
+
+.Login--splash-img {
+    flex: 1;
+    background: no-repeat center/cover url("./assets/images/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
+}
+
+
+.Login--form-container {
+    padding: 0 2rem;
+}
+
+.Login--right-column {
+    height: 100vh;
 }
