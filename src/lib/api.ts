@@ -1,8 +1,11 @@
 // import _ from "lodash";
 
-// export default class ApiService {
-//   baseUrl = "";
-const baseUrl = "";
+const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string;
+const sepalClientId = process.env.REACT_APP_SEPAL_CLIENT_ID as string;
+const sepalClientSecret = process.env.REACT_APP_SEPAL_CLIENT_SECRET as string;
+
+const accessToken = localStorage.getItem("access_token");
+const refreshToken = localStorage.getItem("refresh_token");
 
 function toCamelCase(obj: any): any {
   return obj;
@@ -47,18 +50,19 @@ async function get(url: string): Promise<any> {
   return toCamelCase(data);
 }
 
-async function post(url: string, body: FormData | null): Promise<any> {
+async function post(url: string, data: object): Promise<any> {
   url = baseUrl.concat(url);
+  const body = JSON.stringify(toSnakeCase(data));
   const resp = await fetch(url, {
     method: "POST",
-    body: toSnakeCase(body),
+    body,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json"
     }
   });
-  const data = await resp.json();
-  return toCamelCase(data);
+  const json = await resp.json();
+  return toCamelCase(json);
 }
 
 async function patch(url: string, body: any | null): Promise<any> {
@@ -80,9 +84,24 @@ async function del(url: string): Promise<any> {
   return await fetch(url, { method: "DELETE" });
 }
 
-function isLoggedIn() {
-  return false;
+async function login(username: string, password: string): Promise<any> {
+  const url = baseUrl.concat("/o/token/");
+  const data = new FormData();
+  data.set("username", username);
+  data.set("password", password);
+  data.set("client_id", sepalClientId);
+  data.set("client_secret", sepalClientSecret);
+  data.set("grant_type", "password");
+  data.set("scope", "read write admin");
+  const resp = await fetch(url, {
+    method: "POST",
+    body: data
+  });
+  return await resp.json();
 }
-// }
 
-export { get, post, patch, del, isLoggedIn };
+function isLoggedIn() {
+  return !!accessToken;
+}
+
+export { get, post, patch, del, login, isLoggedIn };

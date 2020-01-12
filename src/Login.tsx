@@ -1,4 +1,5 @@
 import React, { useState, ChangeEvent } from "react";
+import { useHistory } from "react-router-dom";
 import {
   EuiButton,
   EuiFieldPassword,
@@ -11,46 +12,58 @@ import {
   EuiText,
   EuiTitle
 } from "@elastic/eui";
+
+import * as api from "./lib/api";
 import splashImage from "./assets/images/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState();
   const [password, setPassword] = useState();
+  const history = useHistory();
 
-  function handleSubmit(event: any) {
-    // SubmitEvent) {
-    console.log("Submit");
-    /* const form = event.target;
-     * const formData = new FormData(form);
-     * console.log(formData); */
-    console.log(`username: ${username}`);
-    console.log(`password: ${password}`);
-    console.log(`x: ${password}`);
+  function handleSubmit() {
+    api
+      .login(username, password)
+      .then(resp => {
+        console.log(resp);
+        history.push("/");
+      })
+      .catch(e => {
+        // TODO: handle error
+        console.log(e);
+      });
   }
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    /* console.log(`name: ${name}`);
-     * console.log(`value: ${value}`); */
-    /* setter(event.target.value); */
+    // TODO: handle submit on enter
   }
 
   return (
     <>
       <EuiFlexGroup alignItems="center">
         <EuiFlexItem style={{ alignItems: "center" }}>
-          <EuiForm style={{ padding: "2rem", minWidth: "400px" }}>
+          <EuiForm
+            style={{ padding: "2rem", minWidth: "400px" }}
+            onSubmit={handleSubmit} // TODO: onSubmit doesn't work on EuiForm
+          >
             <EuiText>
               <p style={{ marginBottom: "0" }}>Welcome to</p>
               <h1 style={{ marginTop: "0" }}>Sepal</h1>
             </EuiText>
             <EuiFormRow label="User" style={{ marginTop: "1rem" }}>
-              <EuiFieldText name="username" />
+              <EuiFieldText
+                name="username"
+                onChange={e => setUsername(e.target.value)}
+              />
             </EuiFormRow>
             <EuiFormRow label="Password">
-              <EuiFieldPassword name="password" />
+              <EuiFieldPassword
+                name="password"
+                onChange={e => setPassword(e.target.value)}
+              />
             </EuiFormRow>
             <EuiSpacer />
-            <EuiButton type="submit" fill>
+            <EuiButton type="submit" fill onClick={handleSubmit}>
               Sign In
             </EuiButton>
           </EuiForm>

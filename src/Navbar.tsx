@@ -10,7 +10,7 @@ import {
   EuiIcon
 } from "@elastic/eui";
 
-import * as api from "./services/api.service";
+import * as api from "./lib/api";
 
 const Navbar: React.FC = () => {
   function renderLogo() {
