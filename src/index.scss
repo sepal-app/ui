@@ -8,3 +8,16 @@ html, body {
     // The default letter spacing in ElasticUI is a bit tight.
     letter-spacing: .02em;
 }
+
+.Navbar--searchSection {
+    justify-content: center;
+    align-items: center;
+
+    input {
+        padding: 8px;
+        border: solid 1px #ddd;
+        border-radius: 3px;
+        min-width: 400px;
+        font-size: $euiFontSizeS;
+    }
+}

@@ -9,12 +9,10 @@ import {
   EuiForm,
   EuiFormRow,
   EuiSpacer,
-  EuiText,
-  EuiTitle
+  EuiText
 } from "@elastic/eui";
 
 import * as api from "./lib/api";
-import splashImage from "./assets/images/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState();
@@ -26,7 +24,7 @@ const Login: React.FC = () => {
       .login(username, password)
       .then(resp => {
         console.log(resp);
-        history.push("/");
+        history.push("/search");
       })
       .catch(e => {
         // TODO: handle error

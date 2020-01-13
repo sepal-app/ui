@@ -1,11 +1,25 @@
-// import _ from "lodash";
+import _ from "lodash";
 
 const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string;
 const sepalClientId = process.env.REACT_APP_SEPAL_CLIENT_ID as string;
 const sepalClientSecret = process.env.REACT_APP_SEPAL_CLIENT_SECRET as string;
 
-const accessToken = localStorage.getItem("access_token");
-const refreshToken = localStorage.getItem("refresh_token");
+function accessToken(token?: string) {
+  if (!token) {
+    return localStorage.getItem("refresh_token");
+  }
+
+  console.log(`setting token: ${token}`);
+  localStorage.setItem("access_token", token as string);
+}
+
+function refreshToken(token?: string) {
+  if (!token) {
+    return localStorage.getItem("refresh_token");
+  }
+
+  localStorage.setItem("refresh_token", token as string);
+}
 
 function toCamelCase(obj: any): any {
   return obj;
@@ -97,11 +111,21 @@ async function login(username: string, password: string): Promise<any> {
     method: "POST",
     body: data
   });
-  return await resp.json();
+  const json = await resp.json();
+  accessToken(json.access_token);
+  refreshToken(json.refresh_token);
+  return json;
+}
+
+async function logout() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  return Promise.resolve();
 }
 
 function isLoggedIn() {
-  return !!accessToken;
+  console.log(`accessToken: ${accessToken()}`);
+  return !!accessToken();
 }
 
-export { get, post, patch, del, login, isLoggedIn };
+export { baseUrl, get, post, patch, del, login, logout, isLoggedIn };

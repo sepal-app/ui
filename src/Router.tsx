@@ -1,25 +1,41 @@
 import React from "react";
-import { Switch, Route } from "react-router-dom";
+import { Redirect, Route, Switch } from "react-router-dom";
 import Login from "./Login";
 import Logout from "./Logout";
 import Home from "./Home";
 import Search from "./Search";
 
+import * as api from "./lib/api";
+
+const PrivateRoute = ({ component, ...rest }: any) => {
+  function renderComponent(props: any) {
+    const prototype = component.prototype;
+    return !!(prototype && prototype.isReactComponent)
+      ? React.createElement(component, props)
+      : component({ ...props });
+  }
+
+  return (
+    <Route
+      {...rest}
+      render={props => {
+        return api.isLoggedIn() ? (
+          renderComponent(props)
+        ) : (
+          <Redirect to={{ pathname: "/login" }} />
+        );
+      }}
+    />
+  );
+};
+
 const Router: React.FC = () => {
   return (
     <Switch>
-      <Route exact path="/login">
-        <Login />
-      </Route>
-      <Route exact path="/logout">
-        <Logout />
-      </Route>
-      <Route path="/search">
-        <Search />
-      </Route>
-      <Route path="/">
-        <Home />
-      </Route>
+      <PrivateRoute exact path="/logout" component={Logout} />
+      <PrivateRoute exact path="/search" component={Search} />
+      <PrivateRoute exact path="/" component={Home} />
+      <Route path="/login" component={Login} />
     </Switch>
   );
 };
