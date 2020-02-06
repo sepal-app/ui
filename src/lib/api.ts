@@ -4,89 +4,114 @@ const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string;
 const sepalClientId = process.env.REACT_APP_SEPAL_CLIENT_ID as string;
 const sepalClientSecret = process.env.REACT_APP_SEPAL_CLIENT_SECRET as string;
 
-function accessToken(token?: string) {
-  if (!token) {
-    return localStorage.getItem("refresh_token");
+function accessToken(token?: string | null) {
+  if (token === null) {
+    localStorage.removeItem("accessToken");
+  } else if (!token) {
+    return localStorage.getItem("accessToken");
   }
 
-  console.log(`setting token: ${token}`);
-  localStorage.setItem("access_token", token as string);
+  localStorage.setItem("accessToken", token as string);
 }
 
-function refreshToken(token?: string) {
-  if (!token) {
-    return localStorage.getItem("refresh_token");
+function refreshToken(token?: string | null) {
+  if (token === null) {
+    localStorage.removeItem("accessToken");
+  } else if (!token) {
+    return localStorage.getItem("refreshToken");
   }
 
-  localStorage.setItem("refresh_token", token as string);
+  localStorage.setItem("refreshToken", token as string);
 }
 
-function toCamelCase(obj: any): any {
-  return obj;
-  // return _.transform(
-  //   obj,
-  //   (result, value, key) => {
-  //     if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
-  //       value = value.map(i => this.toCamelCase(i));
-  //     } else if (_.isPlainObject(value)) {
-  //       value = this.toCamelCase(value);
-  //     }
-  //     result[_.camelCase(key)] = value;
-  //   },
-  //   {}
-  // );
+class ResponseError extends Error {
+  response: Response;
+
+  constructor(message: string, response: Response) {
+    super(message);
+    this.response = response;
+  }
 }
 
-function toSnakeCase(obj: any): any {
-  return obj;
-  // return _.transform(
-  //   obj,
-  //   (result, value, key) => {
-  //     if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
-  //       value = value.map(i => this.toSnakeCase(i));
-  //     } else if (_.isObject(value)) {
-  //       value = this.toSnakeCase(value);
-  //     }
-  //     result[_.snakeCase(key)] = value;
-  //   },
-  //   {}
-  // );
+function toCamelCase<T>(obj: any): T {
+  return _.transform<any, T>(
+    obj,
+    (result: T, value: any, key: string) => {
+      if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
+        value = value.map(i => toCamelCase(i));
+      } else if (_.isPlainObject(value)) {
+        value = toCamelCase(value);
+      }
+      (<any>result)[_.camelCase(key)] = value;
+    },
+    {} as T
+  );
 }
 
-async function get(url: string): Promise<any> {
-  url = baseUrl.concat(url);
-  const resp = await fetch(url, {
+function toSnakeCase<T>(obj: any): T {
+  return _.transform<any, T>(
+    obj,
+    (result: T, value: any, key: string) => {
+      if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
+        value = value.map(i => toSnakeCase(i));
+      } else if (_.isObject(value)) {
+        value = toSnakeCase(value);
+      }
+      (<any>result)[_.snakeCase(key)] = value;
+    },
+    {} as T
+  );
+}
+
+async function request(url: string, options?: RequestInit): Promise<any> {
+  return fetch(url, {
     headers: {
-      Accept: "application/json"
-    }
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken()}`,
+      ...options?.headers
+    },
+    ...options
   });
+}
+
+async function get<T>(url: string): Promise<T> {
+  url = baseUrl.concat(url);
+  const resp = await request(url);
+
+  console.log(resp);
+  if (!resp.ok) {
+    throw new ResponseError(resp.statusText, resp);
+  }
+
   const data = await resp.json();
   return toCamelCase(data);
 }
 
-async function post(url: string, data: object): Promise<any> {
+async function post<T>(url: string, data: object): Promise<T> {
   url = baseUrl.concat(url);
   const body = JSON.stringify(toSnakeCase(data));
-  const resp = await fetch(url, {
+  const resp = await request(url, {
     method: "POST",
     body,
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json"
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken()}`
     }
   });
   const json = await resp.json();
   return toCamelCase(json);
 }
 
-async function patch(url: string, body: any | null): Promise<any> {
+async function patch<T>(url: string, body: any | null): Promise<T> {
   url = baseUrl.concat(url);
   const resp = await fetch(url, {
     method: "PATCH",
     body: toSnakeCase(body),
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json"
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken()}`
     }
   });
   const data = await resp.json();
@@ -95,7 +120,12 @@ async function patch(url: string, body: any | null): Promise<any> {
 
 async function del(url: string): Promise<any> {
   url = baseUrl.concat(url);
-  return await fetch(url, { method: "DELETE" });
+  return await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken()}`
+    }
+  });
 }
 
 async function login(username: string, password: string): Promise<any> {
@@ -118,13 +148,12 @@ async function login(username: string, password: string): Promise<any> {
 }
 
 async function logout() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
+  accessToken(null);
+  refreshToken(null);
   return Promise.resolve();
 }
 
 function isLoggedIn() {
-  console.log(`accessToken: ${accessToken()}`);
   return !!accessToken();
 }
 

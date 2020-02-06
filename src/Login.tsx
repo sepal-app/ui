@@ -13,19 +13,21 @@ import {
 } from "@elastic/eui";
 
 import * as api from "./lib/api";
+import { me, useCurrentUser } from "./lib/user";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState();
   const [password, setPassword] = useState();
+  const [, setCurrentUser] = useCurrentUser();
+
   const history = useHistory();
 
   function handleSubmit() {
     api
       .login(username, password)
-      .then(resp => {
-        console.log(resp);
-        history.push("/search");
-      })
+      .then(() => me())
+      .then(user => setCurrentUser(user))
+      .then(() => history.push("/search"))
       .catch(e => {
         // TODO: handle error
         console.log(e);

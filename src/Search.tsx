@@ -1,12 +1,8 @@
 import React from "react";
-import { withNavbar } from "./Navbar";
+import Page from "./Page";
 
-const Search: React.FC = withNavbar(() => {
-  return (
-    <div>
-      <h1>Search</h1>
-    </div>
-  );
-});
+const Search: React.FC = () => {
+  return <Page contentTitle="Search">Search contents</Page>;
+};
 
 export default Search;

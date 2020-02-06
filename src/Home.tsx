@@ -1,15 +1,8 @@
 import React from "react";
+import Page from "./Page";
 
-import { withNavbar } from "./Navbar";
-
-
-const Home: React.FC = withNavbar(() => {
-  console.log("Home()");
-  return (
-    <div>
-      <div>Home</div>
-    </div>
-  );
-});
+const Home: React.FC = () => {
+    return <Page contentTitle="Home">Home contents</Page>;
+};
 
 export default Home;
