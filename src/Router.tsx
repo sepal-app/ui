@@ -8,24 +8,10 @@ import Search from "./Search";
 import * as api from "./lib/api";
 
 const PrivateRoute = ({ component, ...rest }: any) => {
-  function renderComponent(props: any) {
-    const prototype = component.prototype;
-    return !!(prototype && prototype.isReactComponent)
-      ? React.createElement(component, props)
-      : component({ ...props });
-  }
-
-  return (
-    <Route
-      {...rest}
-      render={props => {
-        return api.isLoggedIn() ? (
-          renderComponent(props)
-        ) : (
-          <Redirect to={{ pathname: "/login" }} />
-        );
-      }}
-    />
+  return api.isLoggedIn() ? (
+    <Route component={component} />
+  ) : (
+    <Redirect to={{ pathname: "/login" }} />
   );
 };
 
