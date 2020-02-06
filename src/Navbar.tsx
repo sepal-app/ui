@@ -1,4 +1,4 @@
-import React, { useEffect, useState, KeyboardEvent } from "react";
+import React, { useState, KeyboardEvent } from "react";
 import { useHistory } from "react-router-dom";
 import {
   EuiHeader,
@@ -15,7 +15,6 @@ import {
 } from "@elastic/eui";
 
 import * as api from "./lib/api";
-import { Organization } from "./lib/organization";
 import { useCurrentOrganization, useCurrentUser } from "./lib/user";
 
 const Navbar: React.FC = () => {
@@ -23,7 +22,7 @@ const Navbar: React.FC = () => {
   const history = useHistory();
   const [query, setQuery] = useState();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showOrgMenu, setShowOrgMenu] = useState(false);
+  const [, setShowOrgMenu] = useState(false);
   const [currentUser, ,] = useCurrentUser();
 
   const [

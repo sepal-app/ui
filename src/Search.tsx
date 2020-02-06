@@ -2,9 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   EuiListGroup,
   EuiListGroupItem,
-  EuiSpacer,
-  EuiSwitch,
-  EuiCode,
   EuiFlexGroup,
   EuiFlexItem,
   EuiText

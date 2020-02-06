@@ -42,7 +42,7 @@ function toCamelCase<T>(obj: any): T {
       } else if (_.isPlainObject(value)) {
         value = toCamelCase(value);
       }
-      (<any>result)[_.camelCase(key)] = value;
+      (result as any)[_.camelCase(key)] = value;
     },
     {} as T
   );
@@ -57,7 +57,7 @@ function toSnakeCase<T>(obj: any): T {
       } else if (_.isObject(value)) {
         value = toSnakeCase(value);
       }
-      (<any>result)[_.snakeCase(key)] = value;
+      (result as any)[_.snakeCase(key)] = value;
     },
     {} as T
   );
@@ -77,8 +77,6 @@ async function request(url: string, options?: RequestInit): Promise<any> {
 async function get<T>(url: string): Promise<T> {
   url = baseUrl.concat(url);
   const resp = await request(url);
-
-  console.log(resp);
   if (!resp.ok) {
     throw new ResponseError(resp.statusText, resp);
   }

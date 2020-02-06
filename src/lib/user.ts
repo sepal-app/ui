@@ -1,6 +1,5 @@
 import * as api from "./api";
 import { Organization } from "./organization";
-import * as _ from "lodash";
 import useLocalStorage from "../hooks/local-storage";
 
 export interface User {
