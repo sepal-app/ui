@@ -10,7 +10,7 @@ import * as api from "./lib/api";
 
 const PrivateRoute = ({ component, ...rest }: any) => {
   return api.isLoggedIn() ? (
-    <Route component={component} />
+    <Route {...rest} component={component} />
   ) : (
     <Redirect to={{ pathname: "/login" }} />
   );
