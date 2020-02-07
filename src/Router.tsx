@@ -4,6 +4,7 @@ import Login from "./Login";
 import Logout from "./Logout";
 import Home from "./Home";
 import Search from "./Search";
+import TaxonForm from "./TaxonForm";
 
 import * as api from "./lib/api";
 
@@ -20,6 +21,8 @@ const Router: React.FC = () => {
     <Switch>
       <PrivateRoute exact path="/logout" component={Logout} />
       <PrivateRoute exact path="/search" component={Search} />
+      <PrivateRoute exact path="/taxon/:taxonId" component={TaxonForm} />
+      <PrivateRoute exact path="/taxon" component={TaxonForm} />
       <PrivateRoute exact path="/" component={Home} />
       <Route path="/login" component={Login} />
     </Switch>

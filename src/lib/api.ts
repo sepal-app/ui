@@ -71,11 +71,28 @@ async function request(url: string, options?: RequestInit): Promise<any> {
       ...options?.headers
     },
     ...options
+  }).then(resp => {
+    if (resp.status === 401) {
+      // logout if we got a 401 error
+      logout();
+      if (!window.location.pathname.startsWith("/login")) {
+        // if we're not already at /login then go there
+        const origin = window.location.origin;
+        window.location.assign(origin.concat("/login"));
+      }
+    }
+
+    if (!resp.ok) {
+      // throw any non 20x errors
+      throw new ResponseError(resp.statusText, resp);
+    }
+
+    return resp;
   });
 }
 
-async function get<T>(url: string): Promise<T> {
-  url = baseUrl.concat(url);
+async function get<T>(path: string): Promise<T> {
+  const url = baseUrl.concat(path);
   const resp = await request(url);
   if (!resp.ok) {
     throw new ResponseError(resp.statusText, resp);
@@ -85,8 +102,8 @@ async function get<T>(url: string): Promise<T> {
   return toCamelCase(data);
 }
 
-async function post<T>(url: string, data: object): Promise<T> {
-  url = baseUrl.concat(url);
+async function post<T>(path: string, data: Partial<T>): Promise<T> {
+  const url = baseUrl.concat(path);
   const body = JSON.stringify(toSnakeCase(data));
   const resp = await request(url, {
     method: "POST",
@@ -101,19 +118,23 @@ async function post<T>(url: string, data: object): Promise<T> {
   return toCamelCase(json);
 }
 
-async function patch<T>(url: string, body: any | null): Promise<T> {
-  url = baseUrl.concat(url);
+async function patch<T>(path: string, data: Partial<T> | null): Promise<T> {
+  const url = baseUrl.concat(path);
+  const body = JSON.stringify(toSnakeCase(data));
+  console.log(`patch: ${body}`);
   const resp = await fetch(url, {
     method: "PATCH",
-    body: toSnakeCase(body),
+    body,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
       Authorization: `Bearer ${accessToken()}`
     }
   });
-  const data = await resp.json();
-  return toCamelCase(data);
+  console.log(resp);
+  const json = await resp.json();
+  console.log(json);
+  return toCamelCase(json);
 }
 
 async function del(url: string): Promise<any> {
