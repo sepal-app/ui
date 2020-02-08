@@ -8,6 +8,7 @@ export interface Taxon {
   id: number;
   name: string;
   rank: string;
+  parentId: number | null;
 
   parent?: Taxon;
 }
@@ -53,7 +54,7 @@ async function meta(orgId: number) {
 }
 
 async function search(
-  orgId: string | number,
+  orgId: number,
   query: string
   // options?: { expand?: string[]; include?: string[] }
 ): Promise<Taxon[]> {
