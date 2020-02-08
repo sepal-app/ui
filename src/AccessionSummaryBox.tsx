@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { EuiLink, EuiText } from "@elastic/eui";
 
 import * as accessionSvc from "./lib/accession";
 import { Accession } from "./lib/accession";
@@ -18,7 +19,15 @@ const AccessionSummaryBox: React.FC<AccessionSummaryBoxProps> = ({ item }) => {
       .then(acc => setAccession(acc));
   }, [org.id, accession.id]);
 
-  return <>{accession.code}</>;
+  return (
+    <>
+      <EuiLink href={`/accession/${accession.id}`}>Edit</EuiLink>
+      <EuiText>
+        <h3>{accession.code}</h3>
+        <p>{accession?.taxon?.name && accession.taxon.name}</p>
+      </EuiText>
+    </>
+  );
 };
 
 export default AccessionSummaryBox;

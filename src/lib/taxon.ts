@@ -17,8 +17,8 @@ interface TaxonSearchResult {
 }
 
 async function get(
-  orgId: string | number,
-  id: string | number,
+  orgId: number,
+  id: number,
   options?: { expand?: string[]; include?: string[] }
 ): Promise<Taxon> {
   const params = new URLSearchParams();

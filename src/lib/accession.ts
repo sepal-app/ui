@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { Taxon } from "./taxon";
 
 function basePath(orgId: string | number) {
   return `/v1/orgs/${orgId}/accessions`;
@@ -7,6 +8,9 @@ function basePath(orgId: string | number) {
 export interface Accession {
   id: number;
   code: string;
+  taxonId: number;
+
+  taxon?: Taxon;
 }
 
 interface AccessionSearchResult {
@@ -14,16 +18,41 @@ interface AccessionSearchResult {
 }
 
 async function get(
-  orgId: string | number,
-  id: string | number,
+  orgId: number,
+  id: number,
   options?: { expand?: string[]; include?: string[] }
 ): Promise<Accession> {
   const params = new URLSearchParams();
   if (options && !!options.expand) {
     params.append("expand", options.expand.join(","));
   }
+  if (options && !!options.include) {
+    params.append("include", options.include.join(","));
+  }
   const queryParams = "?".concat(params.toString());
   const path = [basePath(orgId), id, queryParams].join("/");
+  return api.get(path);
+}
+
+async function create(
+  orgId: number,
+  data: Partial<Accession>
+): Promise<Accession> {
+  const path = basePath(orgId).concat("/");
+  return api.post(path, data);
+}
+
+async function update(
+  orgId: number,
+  id: number,
+  data: Partial<Accession>
+): Promise<Accession> {
+  const path = [basePath(orgId), id].join("/").concat("/");
+  return api.patch(path, data);
+}
+
+async function meta(orgId: number) {
+  const path = [basePath(orgId), "meta"].join("/").concat("/");
   return api.get(path);
 }
 
@@ -40,4 +69,4 @@ async function search(
     .then((resp: AccessionSearchResult) => resp.results);
 }
 
-export { get, search };
+export { get, create, update, meta, search };

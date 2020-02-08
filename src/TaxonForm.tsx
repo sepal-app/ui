@@ -28,7 +28,7 @@ const TaxonForm: React.FC<TaxonFormProps> = () => {
     }
 
     taxonSvc
-      .get(org.id, taxonId, { expand: ["parent"] })
+      .get(org.id, parseInt(taxonId), { expand: ["parent"] })
       .then(t => setTaxon(t));
   }, [org.id, taxonId]);
 
