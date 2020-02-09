@@ -102,7 +102,7 @@ async function get<T>(path: string): Promise<T> {
   return toCamelCase(data);
 }
 
-async function post<T>(path: string, data: Partial<T>): Promise<T> {
+async function post<T, K>(path: string, data: K): Promise<T> {
   const url = baseUrl.concat(path);
   const body = JSON.stringify(toSnakeCase(data));
   const resp = await request(url, {
@@ -118,7 +118,7 @@ async function post<T>(path: string, data: Partial<T>): Promise<T> {
   return toCamelCase(json);
 }
 
-async function patch<T>(path: string, data: Partial<T> | null): Promise<T> {
+async function patch<T, K>(path: string, data: K): Promise<T> {
   const url = baseUrl.concat(path);
   const body = JSON.stringify(toSnakeCase(data));
   console.log(`patch: ${body}`);

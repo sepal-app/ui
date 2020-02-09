@@ -95,14 +95,15 @@ const TaxonForm: React.FC<TaxonFormProps> = () => {
 
   function handleParentChange(selectedOptions: any) {
     setSelectedParents(selectedOptions);
+    let txn = JSON.parse(JSON.stringify(taxon)); // deep clone
     if (!!selectedOptions && selectedOptions.length) {
-      taxon.parentId = selectedOptions[0].taxon.id;
-      taxon.parent = selectedOptions[0].taxon;
+      txn.parentId = selectedOptions[0].taxon.id;
+      txn.parent = selectedOptions[0].taxon;
     } else {
-      taxon.parentId = null;
-      taxon.parent = undefined;
+      txn.parentId = null;
+      txn.parent = undefined;
     }
-    setTaxon(taxon);
+    setTaxon(txn);
   }
 
   return (

@@ -13,6 +13,8 @@ export interface Accession {
   taxon?: Taxon;
 }
 
+export type AccessionFormValues = Pick<Accession, "code" | "taxonId">;
+
 interface AccessionSearchResult {
   results: Accession[];
 }
@@ -36,7 +38,7 @@ async function get(
 
 async function create(
   orgId: number,
-  data: Partial<Accession>
+  data: AccessionFormValues
 ): Promise<Accession> {
   const path = basePath(orgId).concat("/");
   return api.post(path, data);
@@ -45,7 +47,7 @@ async function create(
 async function update(
   orgId: number,
   id: number,
-  data: Partial<Accession>
+  data: AccessionFormValues
 ): Promise<Accession> {
   const path = [basePath(orgId), id].join("/").concat("/");
   return api.patch(path, data);
