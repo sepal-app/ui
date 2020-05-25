@@ -9,7 +9,6 @@ import {
   EuiIcon,
   EuiKeyPadMenu,
   EuiKeyPadMenuItem,
-  EuiKeyPadMenuItemButton,
   EuiPopover,
   EuiSuperSelect
 } from "@elastic/eui";
@@ -112,9 +111,9 @@ const Navbar: React.FC = () => {
           <EuiKeyPadMenuItem label="Settings" href="/settings">
             <EuiIcon type="advancedSettingsApp" size="l" />
           </EuiKeyPadMenuItem>
-          <EuiKeyPadMenuItemButton label="Logout" onClick={() => logout()}>
+          <EuiKeyPadMenuItem label="Logout" onClick={() => logout()}>
             <EuiIcon type="exit" size="l" />
-          </EuiKeyPadMenuItemButton>
+          </EuiKeyPadMenuItem>
           {/* <EuiKeyPadMenuItem label="Dashboard" href="#">
                 <EuiIcon type="dashboardApp" size="l" />
                 </EuiKeyPadMenuItem> */}
