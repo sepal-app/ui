@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React from "react";
 import { useHistory } from "react-router-dom";
 import {
   EuiButton,
@@ -11,20 +11,23 @@ import {
   EuiSpacer,
   EuiText
 } from "@elastic/eui";
+import { Form, Formik } from "formik";
 
 import * as api from "./lib/api";
 import { me, useCurrentUser } from "./lib/user";
 
-const Login: React.FC = () => {
-  const [username, setUsername] = useState();
-  const [password, setPassword] = useState();
-  const [, setCurrentUser] = useCurrentUser();
+interface LoginValues {
+  username: string;
+  password: string;
+}
 
+const Login: React.FC = () => {
+  const [, setCurrentUser] = useCurrentUser();
   const history = useHistory();
 
-  function handleSubmit() {
+  function handleSubmit(values: LoginValues) {
     api
-      .login(username, password)
+      .login(values.username, values.password)
       .then(() => me())
       .then(user => setCurrentUser(user))
       .then(() => history.push("/search"))
@@ -34,48 +37,54 @@ const Login: React.FC = () => {
       });
   }
 
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    // TODO: handle submit on enter
-  }
-
   return (
-    <>
-      <EuiFlexGroup alignItems="center">
-        <EuiFlexItem style={{ alignItems: "center" }}>
-          <EuiForm
-            style={{ padding: "2rem", minWidth: "400px" }}
-            onSubmit={handleSubmit} // TODO: onSubmit doesn't work on EuiForm
-          >
-            <EuiText>
-              <p style={{ marginBottom: "0" }}>Welcome to</p>
-              <h1 style={{ marginTop: "0" }}>Sepal</h1>
-            </EuiText>
-            <EuiFormRow label="User" style={{ marginTop: "1rem" }}>
-              <EuiFieldText
-                name="username"
-                onChange={e => setUsername(e.target.value)}
-              />
-            </EuiFormRow>
-            <EuiFormRow label="Password">
-              <EuiFieldPassword
-                name="password"
-                onChange={e => setPassword(e.target.value)}
-              />
-            </EuiFormRow>
-            <EuiSpacer />
-            <EuiButton type="submit" fill onClick={handleSubmit}>
-              Sign In
-            </EuiButton>
-          </EuiForm>
-        </EuiFlexItem>
-        <EuiFlexItem grow={2}>
-          <div className="Login--splash-img" style={{ minHeight: "100vh" }}>
-            {" "}
-            &nbsp;
-          </div>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </>
+    <Formik
+      enableReinitialize={true}
+      initialValues={{ username: "", password: "" }}
+      onSubmit={handleSubmit}
+    >
+      {({ values, handleChange }) => (
+        <Form>
+          <EuiFlexGroup alignItems="center">
+            <EuiFlexItem style={{ alignItems: "center" }}>
+              <EuiForm
+                style={{ padding: "2rem", minWidth: "400px" }}
+                component="form"
+              >
+                <EuiText>
+                  <p style={{ marginBottom: "0" }}>Welcome to</p>
+                  <h1 style={{ marginTop: "0" }}>Sepal</h1>
+                </EuiText>
+                <EuiFormRow label="User" style={{ marginTop: "1rem" }}>
+                  <EuiFieldText
+                    name="username"
+                    value={values.username}
+                    onChange={handleChange}
+                  />
+                </EuiFormRow>
+                <EuiFormRow label="Password">
+                  <EuiFieldPassword
+                    name="password"
+                    value={values.password}
+                    onChange={handleChange}
+                  />
+                </EuiFormRow>
+                <EuiSpacer />
+                <EuiButton type="submit" fill>
+                  Sign In
+                </EuiButton>
+              </EuiForm>
+            </EuiFlexItem>
+            <EuiFlexItem grow={2}>
+              <div className="Login--splash-img" style={{ minHeight: "100vh" }}>
+                {" "}
+                &nbsp;
+              </div>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </Form>
+      )}
+    </Formik>
   );
 };
 
