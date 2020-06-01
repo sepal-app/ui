@@ -1,18 +1,16 @@
-import React from "react";
-import { useHistory } from "react-router-dom";
-import * as api from "./lib/api";
+import React from "react"
+import { useHistory } from "react-router-dom"
+import { logout } from "./lib/auth"
 
-const Logout: React.FC = () => {
-  const history = useHistory();
-  api.logout();
-  history.push("/");
+export const Logout: React.FC = () => {
+  const history = useHistory()
+  logout()
+  history.push("/")
 
   return (
     <div>
       Logging out...
       <a href="/login">Login</a>
     </div>
-  );
-};
-
-export default Logout;
+  )
+}

@@ -1,116 +1,98 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import {
-  EuiButton,
-  EuiComboBox,
-  EuiFieldText,
-  EuiForm,
-  EuiFormRow
-} from "@elastic/eui";
-import { Form, Formik, FormikHelpers } from "formik";
+import React, { useState } from "react"
+import { useParams } from "react-router-dom"
+import { EuiButton, EuiComboBox, EuiFieldText, EuiForm, EuiFormRow } from "@elastic/eui"
+import { Form, Formik, FormikHelpers } from "formik"
+import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
+import { EMPTY, iif, of, zip } from "rxjs"
+import { catchError, map, mergeMap, switchMap, tap } from "rxjs/operators"
+import _ from "lodash"
 
-import Page from "./Page";
-import * as accessionSvc from "./lib/accession";
-import { Accession, AccessionFormValues } from "./lib/accession";
-import { useCurrentOrganization } from "./lib/user";
-import * as taxonSvc from "./lib/taxon";
-import { Taxon } from "./lib/taxon";
+import Page from "./Page"
+import * as accessionSvc from "./lib/accession"
+import { Accession, AccessionFormValues } from "./lib/accession"
+import { currentOrganization$ } from "./lib/user"
+import * as taxonSvc from "./lib/taxon"
+import { Taxon } from "./lib/taxon"
+import { isNotEmpty } from "./lib/observables"
 
 interface AccessionFormProps {
-  accession: Accession;
+  accession: Accession
 }
 
 interface TaxonCompletion {
-  label: string;
-  taxon: Taxon;
+  label: string
+  taxon: Taxon
 }
 
-const AccessionForm: React.FC<AccessionFormProps> = () => {
-  const { accessionId } = useParams();
-  const [formValues, setFormValues] = useState<AccessionFormValues>({
-    code: "",
-    taxonId: -1
-  });
-  const [org, ,] = useCurrentOrganization();
-  const [taxonCompletions, setTaxonCompletions] = useState<TaxonCompletion[]>(
-    []
-  );
-  const [selectedTaxa, setSelectedTaxa] = useState<
-    TaxonCompletion[] | undefined
-  >([]);
+const useParamsObservable = () => useObservable(pluckFirst, [useParams<Params>()])
 
-  useEffect(() => {
-    async function fetchAccession() {
-      if (!accessionId) {
-        return;
-      }
-      try {
-        const acc = await accessionSvc.get(org.id, parseInt(accessionId), {
-          expand: ["taxon"]
-        });
+interface Params {
+  id: string
+}
 
-        // TODO: if we can't find an accession with this id we should redirect
-        // to a 404
-        setFormValues({
-          code: acc.code,
-          taxonId: acc.taxonId
-        });
+export const AccessionForm: React.FC<AccessionFormProps> = () => {
+  const [selectedTaxa, setSelectedTaxa] = useState<TaxonCompletion[]>([])
+  const params$ = useParamsObservable()
+  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
+  const [accession] = useObservableState(() =>
+    zip(params$, org$).pipe(
+      // TODO: add an iif so that we can either set the accession or look it up
+      switchMap(([{ id }, org]) =>
+        accessionSvc.get(org.id, id, {
+          expand: ["taxon"],
+        }),
+      ),
+      tap((acc) => updateTaxonCompletions(acc.taxon)),
+    ),
+  )
 
-        const taxonCompletions = acc.taxon
-          ? [{ label: acc.taxon.name, taxon: acc.taxon }]
-          : [];
-        setSelectedTaxa(taxonCompletions);
-        setTaxonCompletions(taxonCompletions);
-      } catch (err) {
-        // TODO: handler errors
-        console.error(err);
-      }
-    }
-
-    fetchAccession();
-  }, [org.id, accessionId]);
+  const [taxonCompletions, updateTaxonCompletions] = useObservableState(($input) =>
+    $input.pipe(
+      mergeMap((input) =>
+        iif(
+          () => _.isString(input),
+          // if the input is a string then search for completions
+          org$.pipe(
+            switchMap((org) => taxonSvc.search(org.id, input)),
+            map((taxa) => taxa.map((taxon) => ({ label: taxon.name, taxon }))),
+          ),
+          // if the input is not a string then assume it's a taxon and set it
+          // as the only completion
+          of([{ label: input.name, taxon: input }]).pipe(
+            tap((completions) => setSelectedTaxa(completions)),
+          ),
+        ),
+      ),
+    ),
+  )
 
   async function handleSubmit(
     values: AccessionFormValues,
-    { setSubmitting }: FormikHelpers<AccessionFormValues>
+    { setSubmitting }: FormikHelpers<AccessionFormValues>,
   ) {
-    values.taxonId = (selectedTaxa as TaxonCompletion[])[0].taxon.id as number;
-    try {
-      await (!!accessionId
-        ? accessionSvc.update(
-            org.id,
-            parseInt(accessionId),
-            values as AccessionFormValues
-          )
-        : accessionSvc.create(org.id, values as AccessionFormValues));
-    } catch (err) {
-      // TODO: handle errors
-      console.error(err);
-    }
-    setSubmitting(false);
-  }
-
-  async function handleTaxonSearchChange(query: string) {
-    if (query.length < 3) {
-      return;
-    }
-    try {
-      const taxa = await taxonSvc.search(org.id, query);
-      const items = taxa.map(taxon => {
-        return {
-          label: taxon.name,
-          taxon: taxon
-        };
-      });
-      setTaxonCompletions(items);
-    } catch (err) {
-      // TODO: handle error
-      console.error(err);
-    }
+    values.taxonId = (selectedTaxa as TaxonCompletion[])[0].taxon.id as number
+    zip(params$, org$)
+      .pipe(
+        mergeMap(([{ id }, org]) =>
+          iif(
+            () => !id,
+            accessionSvc.create(org.id, values),
+            accessionSvc.update(org.id, id, values),
+          ),
+        ),
+        catchError((err) => {
+          // this.notificationSvc.error("Search failed.");
+          console.log(err)
+          return EMPTY
+        }),
+        tap(() => setSubmitting(false)),
+        // TODO: update accessions
+      )
+      .subscribe()
   }
 
   function handleTaxonChange(selectedOptions: any) {
-    setSelectedTaxa(selectedOptions);
+    setSelectedTaxa(selectedOptions)
   }
 
   return (
@@ -118,7 +100,7 @@ const AccessionForm: React.FC<AccessionFormProps> = () => {
       <Formik
         enableReinitialize={true}
         onSubmit={handleSubmit}
-        initialValues={formValues}
+        initialValues={accession ?? { code: "", taxonId: -1 }}
       >
         {({ values, handleChange }) => (
           <Form>
@@ -138,7 +120,7 @@ const AccessionForm: React.FC<AccessionFormProps> = () => {
                   options={taxonCompletions}
                   selectedOptions={selectedTaxa}
                   onChange={handleTaxonChange}
-                  onSearchChange={handleTaxonSearchChange}
+                  onSearchChange={updateTaxonCompletions}
                 />
               </EuiFormRow>
               <EuiButton fill type="submit">
@@ -149,7 +131,5 @@ const AccessionForm: React.FC<AccessionFormProps> = () => {
         )}
       </Formik>
     </Page>
-  );
-};
-
-export default AccessionForm;
+  )
+}

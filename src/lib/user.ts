@@ -1,45 +1,59 @@
-import * as api from "./api";
-import { Organization } from "./organization";
-import useLocalStorage from "../hooks/local-storage";
+import { BehaviorSubject, Observable } from "rxjs"
+
+import * as api from "./api"
+import { Organization } from "./organization"
+
+const currentUserKey = "current_user"
+const currentOrganizationKey = "current_organization"
 
 export interface User {
-  id: number;
-  firstName: string;
-  username: string;
-  email: string;
-  defaultOrganizationId: number;
+  id: number
+  firstName: string
+  username: string
+  email: string
+  defaultOrganizationId: number
 
-  organizations: Organization[];
+  organizations: Organization[]
 }
 
-function useCurrentUser(): [User | undefined, (user: User) => void] {
-  const [value, setValue] = useLocalStorage("currentUser");
-  const currentUser = value ? JSON.parse(value) : undefined;
+const initialUserData = localStorage.getItem(currentUserKey)
 
-  function setCurrentUser(user: User) {
-    setValue(JSON.stringify(user));
+export const currentUser$ = new BehaviorSubject<User | null>(
+  initialUserData ? JSON.parse(initialUserData) : null,
+)
+
+currentUser$.subscribe((value) => {
+  if (value) {
+    localStorage.setItem(currentUserKey, JSON.stringify(value))
+  } else {
+    localStorage.removeItem(currentUserKey)
   }
+})
 
-  return [currentUser, setCurrentUser];
-}
+const initialOrganizationData = localStorage.getItem(currentOrganizationKey)
 
-function useCurrentOrganization() {
-  const [value, setValue] = useLocalStorage("currentOrganization");
-  const currentOrg = value ? JSON.parse(value) : undefined;
+export const currentOrganization$ = new BehaviorSubject<Organization | null>(
+  initialOrganizationData
+    ? JSON.parse(initialOrganizationData)
+    : initialUserData
+    ? JSON.parse(initialUserData).organizations?.[0]
+    : null,
+)
 
-  function setCurrentOrg(org: Organization) {
-    setValue(JSON.stringify(org));
+currentOrganization$.subscribe((value) => {
+  if (value) {
+    localStorage.setItem(currentOrganizationKey, JSON.stringify(value))
+  } else {
+    localStorage.removeItem(currentOrganizationKey)
   }
-
-  return [currentOrg, setCurrentOrg];
-}
+})
 
 async function create() {
   // TODO:
 }
 
-async function me(): Promise<User> {
-  return api.get<User>("/v1/me/");
+export const me = (): Observable<User> => {
+  return api.get<User>("/v1/me/")
 }
 
-export { create, me, useCurrentOrganization, useCurrentUser };
+// export { create, me, useCurrentOrganization, useCurrentUser };

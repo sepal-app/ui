@@ -1,47 +1,60 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react"
 import {
   EuiAccordion,
   EuiListGroup,
   EuiListGroupItem,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiText
-} from "@elastic/eui";
-import useSearchParams from "./hooks/search-params";
+  EuiText,
+} from "@elastic/eui"
+import useSearchParams from "./hooks/search-params"
+import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
+import { switchMap } from "rxjs/operators"
+import { Observable, combineLatest } from "rxjs"
 
-import Page from "./Page";
-import * as taxonSvc from "./lib/taxon";
-import { Taxon } from "./lib/taxon";
-import TaxonSummaryBox from "./TaxonSummaryBox";
+import Page from "./Page"
+import * as taxonSvc from "./lib/taxon"
+import { Taxon } from "./lib/taxon"
+import { TaxonSummaryBox } from "./TaxonSummaryBox"
+import { currentOrganization$ } from "./lib/user"
+import * as accessionSvc from "./lib/accession"
+import { Accession } from "./lib/accession"
+import { AccessionSummaryBox } from "./AccessionSummaryBox"
+import { isNotEmpty } from "./lib/observables"
 
-import * as accessionSvc from "./lib/accession";
-import { Accession } from "./lib/accession";
-import AccessionSummaryBox from "./AccessionSummaryBox";
-import { useCurrentOrganization } from "./lib/user";
+type SearchFunc<T> = (orgId: number, q: string) => Observable<T[]>
 
-const Search: React.FC = () => {
-  const [taxa, setTaxa] = useState<Taxon[]>([]);
-  const [accessions, setAccessions] = useState<Accession[]>([]);
-  const [selected, setSelected] = useState();
-  const [selectedType, setSelectedType] = useState();
-  const [org, ,] = useCurrentOrganization();
-  const params = useSearchParams();
-  const query = params.get("q");
+export const Search: React.FC = () => {
+  const [selected, setSelected] = useState()
+  const [selectedType, setSelectedType] = useState()
+  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
+  const params = useSearchParams()
+  const query$ = useObservable((input$) => pluckFirst(input$).pipe(isNotEmpty()), [
+    params.get("q"),
+  ])
 
-  useEffect(() => {
-    if (!query) {
-      return;
-    }
-    taxonSvc.search(org.id, query).then(results => setTaxa(results));
-    accessionSvc.search(org.id, query).then(results => setAccessions(results));
-  }, [org.id, query]);
+  function makeSearchObservable<T>(search: SearchFunc<T>) {
+    return combineLatest(org$, query$).pipe(
+      switchMap(([org, query]) => search(org.id, query)),
+    )
+  }
+
+  const [taxa] = useObservableState(
+    () => makeSearchObservable<Taxon>(taxonSvc.search),
+    [],
+  )
+
+  const [accessions] = useObservableState(
+    () => makeSearchObservable<Accession>(accessionSvc.search),
+    [],
+  )
 
   function renderSearchResults() {
     function handleClick(item: Taxon | Accession, type: string) {
-      setSelected(item);
-      setSelectedType(type);
+      setSelected(item)
+      setSelectedType(type)
     }
-    const accessionItems = accessions.map(accession => {
+    const accessionItems = accessions?.map((accession) => {
       return (
         <EuiListGroupItem
           label={
@@ -53,10 +66,10 @@ const Search: React.FC = () => {
           onClick={() => handleClick(accession, "accession")}
           isActive={selected === accession}
         />
-      );
-    });
+      )
+    })
 
-    const taxonItems = taxa.map(taxon => {
+    const taxonItems = taxa?.map((taxon) => {
       return (
         <EuiListGroupItem
           label={
@@ -71,8 +84,8 @@ const Search: React.FC = () => {
           onClick={() => handleClick(taxon, "taxon")}
           isActive={selected === taxon}
         />
-      );
-    });
+      )
+    })
 
     return (
       <>
@@ -83,25 +96,21 @@ const Search: React.FC = () => {
         >
           <EuiListGroup>{accessionItems}</EuiListGroup>
         </EuiAccordion>
-        <EuiAccordion
-          buttonContent="Taxa"
-          id="taxaAccordion"
-          initialIsOpen={true}
-        >
+        <EuiAccordion buttonContent="Taxa" id="taxaAccordion" initialIsOpen={true}>
           <EuiListGroup>{taxonItems}</EuiListGroup>
         </EuiAccordion>
       </>
-    );
+    )
   }
 
   function renderSelected() {
     switch (selectedType) {
       case "taxon":
-        return <TaxonSummaryBox item={selected} />;
+        return <TaxonSummaryBox item={selected} />
       case "accession":
-        return <AccessionSummaryBox item={selected} />;
+        return <AccessionSummaryBox item={selected} />
       default:
-        return <></>;
+        return <></>
     }
   }
   return (
@@ -111,7 +120,5 @@ const Search: React.FC = () => {
         <EuiFlexItem>{renderSelected()}</EuiFlexItem>
       </EuiFlexGroup>
     </Page>
-  );
-};
-
-export default Search;
+  )
+}

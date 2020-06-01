@@ -1,3 +1,1 @@
-import TaxonForm from "./TaxonForm";
-
-export default TaxonForm;
+export { TaxonForm } from "./TaxonForm"

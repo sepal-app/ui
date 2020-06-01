@@ -1,179 +1,87 @@
-import _ from "lodash";
+import { Observable, from } from "rxjs"
+import { map, switchMap } from "rxjs/operators"
+import _ from "lodash"
 
-const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string;
-const sepalClientId = process.env.REACT_APP_SEPAL_CLIENT_ID as string;
-const sepalClientSecret = process.env.REACT_APP_SEPAL_CLIENT_SECRET as string;
+import { toCamelCase, toSnakeCase } from "./case"
+import { accessToken$ } from "./auth"
 
-function accessToken(token?: string | null) {
-  if (token === null) {
-    localStorage.removeItem("accessToken");
-  } else if (!token) {
-    return localStorage.getItem("accessToken");
-  }
+const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
 
-  localStorage.setItem("accessToken", token as string);
-}
-
-function refreshToken(token?: string | null) {
-  if (token === null) {
-    localStorage.removeItem("accessToken");
-  } else if (!token) {
-    return localStorage.getItem("refreshToken");
-  }
-
-  localStorage.setItem("refreshToken", token as string);
-}
-
-class ResponseError extends Error {
-  response: Response;
-
-  constructor(message: string, response: Response) {
-    super(message);
-    this.response = response;
-  }
-}
-
-function toCamelCase<T>(obj: any): T {
-  return _.transform<any, T>(
-    obj,
-    (result: T, value: any, key: string) => {
-      if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
-        value = value.map(i => toCamelCase(i));
-      } else if (_.isPlainObject(value)) {
-        value = toCamelCase(value);
-      }
-      (result as any)[_.camelCase(key)] = value;
-    },
-    {} as T
-  );
-}
-
-function toSnakeCase<T>(obj: any): T {
-  return _.transform<any, T>(
-    obj,
-    (result: T, value: any, key: string) => {
-      if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
-        value = value.map(i => toSnakeCase(i));
-      } else if (_.isObject(value)) {
-        value = toSnakeCase(value);
-      }
-      (result as any)[_.snakeCase(key)] = value;
-    },
-    {} as T
-  );
-}
-
-async function request(url: string, options?: RequestInit): Promise<any> {
-  return fetch(url, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken()}`,
-      ...options?.headers
-    },
-    ...options
-  }).then(resp => {
-    if (resp.status === 401) {
-      // logout if we got a 401 error
-      logout();
-      if (!window.location.pathname.startsWith("/login")) {
-        // if we're not already at /login then go there
-        const origin = window.location.origin;
-        window.location.assign(origin.concat("/login"));
-      }
+export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => string) => ({
+  get: (
+    orgId: string | number,
+    id: string | number,
+    options?: { expand?: string[]; include?: string[] },
+  ): Observable<T> => {
+    const params = new URLSearchParams()
+    if (options && !!options.expand) {
+      params.append("expand", options.expand.join(","))
     }
-
-    if (!resp.ok) {
-      // throw any non 20x errors
-      throw new ResponseError(resp.statusText, resp);
+    if (options && !!options.include) {
+      params.append("include", options.include.join(","))
     }
+    const queryParams = "?".concat(params.toString())
+    const path = [pathTemplate(orgId), id, queryParams].join("/")
+    return get<T>(path)
+  },
 
-    return resp;
-  });
-}
+  create: (orgId: string | number, data: F): Observable<T> => {
+    const path = pathTemplate(orgId).concat("/")
+    return post<T, F>(path, data)
+  },
 
-async function get<T>(path: string): Promise<T> {
-  const url = baseUrl.concat(path);
-  const resp = await request(url);
-  if (!resp.ok) {
-    throw new ResponseError(resp.statusText, resp);
-  }
+  update: (orgId: string | number, id: string | number, data: F): Observable<T> => {
+    const path = [pathTemplate(orgId), id].join("/").concat("/")
+    return patch<T, F>(path, data)
+  },
+})
 
-  const data = await resp.json();
-  return toCamelCase(data);
-}
+// class ResponseError extends Error {
+//   response: Response
 
-async function post<T, K>(path: string, data: K): Promise<T> {
-  const url = baseUrl.concat(path);
-  const body = JSON.stringify(toSnakeCase(data));
-  const resp = await request(url, {
+//   constructor(message: string, response: Response) {
+//     super(message)
+//     this.response = response
+//   }
+// }
+
+const request = <T>(url: string, options?: RequestInit): Observable<T> =>
+  accessToken$.pipe(
+    switchMap((accessToken) =>
+      from(
+        fetch(url, {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+            ...options?.headers,
+          },
+          ...options,
+        }),
+      ),
+    ),
+    // TODO: make sure response is JSON
+    switchMap((resp) => from(resp.json())),
+  )
+
+export const get = <T>(path: string): Observable<T> =>
+  request<T>(baseUrl.concat(path), { method: "GET" }).pipe(
+    map((data) => toCamelCase(data)),
+  )
+
+export const post = <T, K>(path: string, data: K): Observable<T> =>
+  request<T>(baseUrl.concat(path), {
     method: "POST",
-    body,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken()}`
-    }
-  });
-  const json = await resp.json();
-  return toCamelCase(json);
-}
+    body: JSON.stringify(toSnakeCase(data)),
+  }).pipe(map((data) => toCamelCase(data)))
 
-async function patch<T, K>(path: string, data: K): Promise<T> {
-  const url = baseUrl.concat(path);
-  const body = JSON.stringify(toSnakeCase(data));
-  console.log(`patch: ${body}`);
-  const resp = await fetch(url, {
+export const patch = <T, K>(path: string, data: K): Observable<T> =>
+  request<T>(baseUrl.concat(path), {
     method: "PATCH",
-    body,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken()}`
-    }
-  });
-  console.log(resp);
-  const json = await resp.json();
-  console.log(json);
-  return toCamelCase(json);
-}
+    body: JSON.stringify(toSnakeCase(data)),
+  }).pipe(map((data) => toCamelCase(data)))
 
-async function del(url: string): Promise<any> {
-  url = baseUrl.concat(url);
-  return await fetch(url, {
+export const del = (path: string): Observable<any> =>
+  request<any>(baseUrl.concat(path), {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken()}`
-    }
-  });
-}
-
-async function login(username: string, password: string): Promise<any> {
-  const url = baseUrl.concat("/o/token/");
-  const data = new FormData();
-  data.set("username", username);
-  data.set("password", password);
-  data.set("client_id", sepalClientId);
-  data.set("client_secret", sepalClientSecret);
-  data.set("grant_type", "password");
-  data.set("scope", "read write admin");
-  const resp = await fetch(url, {
-    method: "POST",
-    body: data
-  });
-  const json = await resp.json();
-  accessToken(json.access_token);
-  refreshToken(json.refresh_token);
-  return json;
-}
-
-async function logout() {
-  accessToken(null);
-  refreshToken(null);
-  return Promise.resolve();
-}
-
-function isLoggedIn() {
-  return !!accessToken();
-}
-
-export { baseUrl, get, post, patch, del, login, logout, isLoggedIn };
+  })

@@ -1,5 +1,5 @@
-import React, { useState, KeyboardEvent } from "react";
-import { useHistory } from "react-router-dom";
+import React, { useState, KeyboardEvent } from "react"
+import { useHistory } from "react-router-dom"
 import {
   EuiHeader,
   EuiHeaderLogo,
@@ -10,85 +10,80 @@ import {
   EuiKeyPadMenu,
   EuiKeyPadMenuItem,
   EuiPopover,
-  EuiSuperSelect
-} from "@elastic/eui";
+  EuiSuperSelect,
+} from "@elastic/eui"
+import { useObservableState } from "observable-hooks"
 
-import * as api from "./lib/api";
-import { useCurrentOrganization, useCurrentUser } from "./lib/user";
+import { logout } from "./lib/auth"
+import { currentOrganization$, currentUser$ } from "./lib/user"
+import { Organization } from "./lib/organization"
 
-const Navbar: React.FC = () => {
-  console.log("entered Navbar()");
-  const history = useHistory();
-  const [query, setQuery] = useState();
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [, setShowOrgMenu] = useState(false);
-  const [currentUser, ,] = useCurrentUser();
-
-  const [
-    currentOrganization,
-    setCurrentOrganization
-  ] = useCurrentOrganization();
+export const Navbar: React.FC = () => {
+  const history = useHistory()
+  const [query, setQuery] = useState()
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [, setShowOrgMenu] = useState(false)
+  const currentUser = useObservableState(currentUser$)
+  const currentOrganization = useObservableState(currentOrganization$)
 
   function renderLogo() {
     return (
-      <EuiHeaderLogo
-        iconType="logoKibana"
-        href="/"
-        aria-label="Got to Sepal ome page"
-      >
+      <EuiHeaderLogo iconType="logoKibana" href="/" aria-label="Got to Sepal ome page">
         Sepal
       </EuiHeaderLogo>
-    );
+    )
   }
 
   function renderSearch() {
     function handleKeyPress(event: KeyboardEvent<HTMLInputElement>) {
       if (event.key === "Enter") {
-        history.push(`/search?q=${query}`);
+        history.push(`/search?q=${query}`)
       }
     }
+
     return (
       <EuiHeaderSectionItem border="none">
         <input
           type="text"
           placeholder="Search..."
           onKeyPress={handleKeyPress}
-          onChange={e => setQuery(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
         />
       </EuiHeaderSectionItem>
-    );
+    )
   }
 
-  async function logout() {
-    setShowUserMenu(false);
-    setShowOrgMenu(false);
-    await api.logout();
-    history.push("/");
+  async function handleLogout() {
+    setShowUserMenu(false)
+    setShowOrgMenu(false)
+    logout()
+    history.push("/")
   }
 
   function renderOrgMenu() {
-    let selected = currentOrganization.id;
+    let selected = currentOrganization?.id.toString()
     function onChange(value: number) {
-      const org = currentUser?.organizations.find(org => org.id === value);
-      setCurrentOrganization(org);
-      selected = org?.id;
+      const org = currentUser?.organizations.find((org) => org.id === value)
+      currentOrganization$.next(org as Organization)
+      // setCurrentOrganization(org as Organization)
+      selected = org?.id?.toString() ?? ""
     }
 
     const options =
-      currentUser?.organizations?.map(org => {
+      currentUser?.organizations?.map((org) => {
         return {
-          value: org.id,
-          inputDisplay: org.name
-        };
-      }) ?? [];
+          value: org.id.toString(),
+          inputDisplay: org.name,
+        }
+      }) ?? []
 
     return (
       <EuiSuperSelect
         options={options}
         valueOfSelected={selected}
-        onChange={value => onChange(parseInt(value))}
+        onChange={(value) => onChange(parseInt(value))}
       />
-    );
+    )
   }
 
   function renderUserMenu() {
@@ -99,7 +94,7 @@ const Navbar: React.FC = () => {
       >
         <EuiIcon type="apps" />
       </EuiHeaderSectionItemButton>
-    );
+    )
 
     return (
       <EuiPopover
@@ -111,7 +106,7 @@ const Navbar: React.FC = () => {
           <EuiKeyPadMenuItem label="Settings" href="/settings">
             <EuiIcon type="advancedSettingsApp" size="l" />
           </EuiKeyPadMenuItem>
-          <EuiKeyPadMenuItem label="Logout" onClick={() => logout()}>
+          <EuiKeyPadMenuItem label="Logout" onClick={() => handleLogout()}>
             <EuiIcon type="exit" size="l" />
           </EuiKeyPadMenuItem>
           {/* <EuiKeyPadMenuItem label="Dashboard" href="#">
@@ -123,15 +118,13 @@ const Navbar: React.FC = () => {
                 </EuiKeyPadMenuItem> */}
         </EuiKeyPadMenu>
       </EuiPopover>
-    );
+    )
   }
 
   return (
     <EuiHeader>
       <EuiHeaderSection>
-        <EuiHeaderSectionItem border="none">
-          {renderLogo()}
-        </EuiHeaderSectionItem>
+        <EuiHeaderSectionItem border="none">{renderLogo()}</EuiHeaderSectionItem>
       </EuiHeaderSection>
 
       <EuiHeaderSection grow={true} className="Navbar--searchSection">
@@ -139,25 +132,9 @@ const Navbar: React.FC = () => {
       </EuiHeaderSection>
 
       <EuiHeaderSection side="right">
-        <EuiHeaderSectionItem border="none">
-          {renderOrgMenu()}
-        </EuiHeaderSectionItem>
-        <EuiHeaderSectionItem border="none">
-          {renderUserMenu()}
-        </EuiHeaderSectionItem>
+        <EuiHeaderSectionItem border="none">{renderOrgMenu()}</EuiHeaderSectionItem>
+        <EuiHeaderSectionItem border="none">{renderUserMenu()}</EuiHeaderSectionItem>
       </EuiHeaderSection>
     </EuiHeader>
-  );
-};
-
-function withNavbar<T>(component: React.FC<T>) {
-  return (props: T) => (
-    <>
-      {api.isLoggedIn() && <Navbar />}
-      {component({ ...props })}
-    </>
-  );
+  )
 }
-
-export default Navbar;
-export { withNavbar };

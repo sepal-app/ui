@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode } from "react"
 import {
   EuiPage,
   EuiPageBody,
@@ -8,18 +8,18 @@ import {
   EuiPageContentHeaderSection,
   EuiPageHeader,
   EuiPageHeaderSection,
-  EuiTitle
-} from "@elastic/eui";
+  EuiTitle,
+} from "@elastic/eui"
 
-import { withNavbar } from "./Navbar";
+import { Navbar } from "./Navbar"
 
 interface PageProps {
-  pageTitle?: string;
-  contentTitle?: string;
-  children: ReactNode;
+  pageTitle?: string
+  contentTitle?: string
+  children: ReactNode
 }
 
-const Page = withNavbar<PageProps>(props => {
+const Page = (props: PageProps) => {
   const header = props.pageTitle && (
     <EuiPageHeader>
       <EuiPageHeaderSection>
@@ -28,7 +28,7 @@ const Page = withNavbar<PageProps>(props => {
         </EuiTitle>
       </EuiPageHeaderSection>
     </EuiPageHeader>
-  );
+  )
 
   const contentHeader = props.contentTitle && (
     <EuiPageContentHeader>
@@ -38,19 +38,22 @@ const Page = withNavbar<PageProps>(props => {
         </EuiTitle>
       </EuiPageContentHeaderSection>
     </EuiPageContentHeader>
-  );
+  )
 
   return (
-    <EuiPage>
-      <EuiPageBody>
-        {header}
-        <EuiPageContent>
-          {contentHeader}
-          <EuiPageContentBody>{props.children}</EuiPageContentBody>
-        </EuiPageContent>
-      </EuiPageBody>
-    </EuiPage>
-  );
-});
+    <>
+      <Navbar />
+      <EuiPage>
+        <EuiPageBody>
+          {header}
+          <EuiPageContent>
+            {contentHeader}
+            <EuiPageContentBody>{props.children}</EuiPageContentBody>
+          </EuiPageContent>
+        </EuiPageBody>
+      </EuiPage>
+    </>
+  )
+}
 
-export default Page;
+export default Page
