@@ -47,7 +47,7 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
 
 const request = <T>(url: string, options?: RequestInit): Observable<T> =>
   accessToken$.pipe(
-    switchMap((accessToken) =>
+    switchMap(accessToken =>
       from(
         fetch(url, {
           headers: {
