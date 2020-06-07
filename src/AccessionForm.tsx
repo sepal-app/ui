@@ -1,6 +1,13 @@
 import React, { useState } from "react"
 import { useParams } from "react-router-dom"
-import { EuiButton, EuiComboBox, EuiFieldText, EuiForm, EuiFormRow } from "@elastic/eui"
+import {
+  EuiButton,
+  EuiComboBox,
+  EuiFieldText,
+  EuiForm,
+  EuiFormRow,
+  EuiTextColor,
+} from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
 import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
 import { EMPTY, iif, of, zip } from "rxjs"
@@ -14,6 +21,7 @@ import { currentOrganization$ } from "./lib/user"
 import * as taxonSvc from "./lib/taxon"
 import { Taxon } from "./lib/taxon"
 import { isNotEmpty } from "./lib/observables"
+import { useExpiringState } from "./hooks/expiring-state"
 
 interface AccessionFormProps {
   accession: Accession
@@ -33,6 +41,8 @@ interface Params {
 export const AccessionForm: React.FC<AccessionFormProps> = () => {
   const [selectedTaxa, setSelectedTaxa] = useState<TaxonCompletion[]>([])
   const params$ = useParamsObservable()
+  const [success, setSuccess] = useExpiringState(false, 1000)
+
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const [accession] = useObservableState(() =>
     zip(params$, org$).pipe(
@@ -42,24 +52,24 @@ export const AccessionForm: React.FC<AccessionFormProps> = () => {
           expand: ["taxon"],
         }),
       ),
-      tap((acc) => updateTaxonCompletions(acc.taxon)),
+      tap(acc => updateTaxonCompletions(acc.taxon)),
     ),
   )
 
-  const [taxonCompletions, updateTaxonCompletions] = useObservableState(($input) =>
+  const [taxonCompletions, updateTaxonCompletions] = useObservableState($input =>
     $input.pipe(
-      mergeMap((input) =>
+      mergeMap(input =>
         iif(
           () => _.isString(input),
           // if the input is a string then search for completions
           org$.pipe(
-            switchMap((org) => taxonSvc.search(org.id, input)),
-            map((taxa) => taxa.map((taxon) => ({ label: taxon.name, taxon }))),
+            switchMap(org => taxonSvc.search(org.id, input)),
+            map(taxa => taxa.map(taxon => ({ label: taxon.name, taxon }))),
           ),
           // if the input is not a string then assume it's a taxon and set it
           // as the only completion
           of([{ label: input.name, taxon: input }]).pipe(
-            tap((completions) => setSelectedTaxa(completions)),
+            tap(completions => setSelectedTaxa(completions)),
           ),
         ),
       ),
@@ -80,13 +90,14 @@ export const AccessionForm: React.FC<AccessionFormProps> = () => {
             accessionSvc.update(org.id, id, values),
           ),
         ),
-        catchError((err) => {
+        catchError(err => {
           // this.notificationSvc.error("Search failed.");
           console.log(err)
           return EMPTY
         }),
         tap(() => setSubmitting(false)),
-        // TODO: update accessions
+        tap(() => setSuccess(true)),
+        // TODO: update accession?
       )
       .subscribe()
   }
@@ -123,9 +134,16 @@ export const AccessionForm: React.FC<AccessionFormProps> = () => {
                   onSearchChange={updateTaxonCompletions}
                 />
               </EuiFormRow>
-              <EuiButton fill type="submit">
-                Save
-              </EuiButton>
+              <div className="actions" style={{ marginTop: "20px" }}>
+                <EuiButton fill type="submit">
+                  Save
+                </EuiButton>
+                {success && (
+                  <EuiTextColor color="secondary" style={{ marginLeft: "20px" }}>
+                    Success!
+                  </EuiTextColor>
+                )}
+              </div>
             </EuiForm>
           </Form>
         )}
