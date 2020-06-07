@@ -1,9 +1,9 @@
 import { Observable, from } from "rxjs"
-import { map, switchMap } from "rxjs/operators"
+import { map, switchMap, tap } from "rxjs/operators"
 import _ from "lodash"
 
 import { toCamelCase, toSnakeCase } from "./case"
-import { accessToken$ } from "./auth"
+import { accessToken$, logout } from "./auth"
 
 const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
 
@@ -60,26 +60,30 @@ const request = <T>(url: string, options?: RequestInit): Observable<T> =>
         }),
       ),
     ),
+    tap(resp => {
+      if (resp?.status === 401) {
+        // TODO: first try to refresh the token
+        logout()
+      }
+    }),
     // TODO: make sure response is JSON
-    switchMap((resp) => from(resp.json())),
+    switchMap(resp => from(resp.json())),
   )
 
 export const get = <T>(path: string): Observable<T> =>
-  request<T>(baseUrl.concat(path), { method: "GET" }).pipe(
-    map((data) => toCamelCase(data)),
-  )
+  request<T>(baseUrl.concat(path), { method: "GET" }).pipe(map(data => toCamelCase(data)))
 
 export const post = <T, K>(path: string, data: K): Observable<T> =>
   request<T>(baseUrl.concat(path), {
     method: "POST",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(map((data) => toCamelCase(data)))
+  }).pipe(map(data => toCamelCase(data)))
 
 export const patch = <T, K>(path: string, data: K): Observable<T> =>
   request<T>(baseUrl.concat(path), {
     method: "PATCH",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(map((data) => toCamelCase(data)))
+  }).pipe(map(data => toCamelCase(data)))
 
 export const del = (path: string): Observable<any> =>
   request<any>(baseUrl.concat(path), {
