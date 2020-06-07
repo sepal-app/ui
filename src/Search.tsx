@@ -7,7 +7,7 @@ import {
   EuiFlexItem,
   EuiText,
 } from "@elastic/eui"
-import useSearchParams from "./hooks/search-params"
+import { useSearchParams } from "./hooks/params"
 import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
 import { switchMap } from "rxjs/operators"
 import { Observable, combineLatest } from "rxjs"
@@ -29,7 +29,7 @@ export const Search: React.FC = () => {
   const [selectedType, setSelectedType] = useState()
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const params = useSearchParams()
-  const query$ = useObservable((input$) => pluckFirst(input$).pipe(isNotEmpty()), [
+  const query$ = useObservable(input$ => pluckFirst(input$).pipe(isNotEmpty()), [
     params.get("q"),
   ])
 
@@ -54,7 +54,7 @@ export const Search: React.FC = () => {
       setSelected(item)
       setSelectedType(type)
     }
-    const accessionItems = accessions?.map((accession) => {
+    const accessionItems = accessions?.map(accession => {
       return (
         <EuiListGroupItem
           label={
@@ -69,7 +69,7 @@ export const Search: React.FC = () => {
       )
     })
 
-    const taxonItems = taxa?.map((taxon) => {
+    const taxonItems = taxa?.map(taxon => {
       return (
         <EuiListGroupItem
           label={

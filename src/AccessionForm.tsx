@@ -1,5 +1,4 @@
 import React, { useState } from "react"
-import { useParams } from "react-router-dom"
 import {
   EuiButton,
   EuiComboBox,
@@ -9,38 +8,28 @@ import {
   EuiTextColor,
 } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
+import { useObservable, useObservableState } from "observable-hooks"
 import { EMPTY, iif, of, zip } from "rxjs"
 import { catchError, map, mergeMap, switchMap, tap } from "rxjs/operators"
 import _ from "lodash"
 
 import Page from "./Page"
 import * as accessionSvc from "./lib/accession"
-import { Accession, AccessionFormValues } from "./lib/accession"
+import { AccessionFormValues } from "./lib/accession"
 import { currentOrganization$ } from "./lib/user"
 import * as taxonSvc from "./lib/taxon"
 import { Taxon } from "./lib/taxon"
 import { isNotEmpty } from "./lib/observables"
-import { useExpiringState } from "./hooks/expiring-state"
-
-interface AccessionFormProps {
-  accession: Accession
-}
+import { useExpiringState, useParamsObservable } from "./hooks"
 
 interface TaxonCompletion {
   label: string
   taxon: Taxon
 }
 
-const useParamsObservable = () => useObservable(pluckFirst, [useParams<Params>()])
-
-interface Params {
-  id: string
-}
-
-export const AccessionForm: React.FC<AccessionFormProps> = () => {
+export const AccessionForm: React.FC = () => {
   const [selectedTaxa, setSelectedTaxa] = useState<TaxonCompletion[]>([])
-  const params$ = useParamsObservable()
+  const params$ = useParamsObservable<{ id: string }>()
   const [success, setSuccess] = useExpiringState(false, 1000)
 
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
@@ -76,7 +65,11 @@ export const AccessionForm: React.FC<AccessionFormProps> = () => {
     ),
   )
 
-  async function handleSubmit(
+  function handleTaxonChange(selectedOptions: any) {
+    setSelectedTaxa(selectedOptions)
+  }
+
+  function handleSubmit(
     values: AccessionFormValues,
     { setSubmitting }: FormikHelpers<AccessionFormValues>,
   ) {
@@ -100,10 +93,6 @@ export const AccessionForm: React.FC<AccessionFormProps> = () => {
         // TODO: update accession?
       )
       .subscribe()
-  }
-
-  function handleTaxonChange(selectedOptions: any) {
-    setSelectedTaxa(selectedOptions)
   }
 
   return (
@@ -134,7 +123,7 @@ export const AccessionForm: React.FC<AccessionFormProps> = () => {
                   onSearchChange={updateTaxonCompletions}
                 />
               </EuiFormRow>
-              <div className="actions" style={{ marginTop: "20px" }}>
+              <div style={{ marginTop: "20px" }}>
                 <EuiButton fill type="submit">
                   Save
                 </EuiButton>

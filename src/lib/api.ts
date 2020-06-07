@@ -1,6 +1,5 @@
 import { Observable, from } from "rxjs"
 import { map, switchMap, tap } from "rxjs/operators"
-import _ from "lodash"
 
 import { toCamelCase, toSnakeCase } from "./case"
 import { accessToken$, logout } from "./auth"

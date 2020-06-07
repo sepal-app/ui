@@ -1,101 +1,86 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react"
 import {
   EuiButton,
   EuiComboBox,
   EuiFieldText,
   EuiForm,
-  EuiFormRow
-} from "@elastic/eui";
-import { Form, Formik, FormikHelpers } from "formik";
+  EuiFormRow,
+  EuiTextColor,
+} from "@elastic/eui"
+import { Form, Formik, FormikHelpers } from "formik"
+import { useObservable, useObservableState } from "observable-hooks"
+import { Observable, iif, of } from "rxjs"
+import { map, mergeMap, switchMap, tap } from "rxjs/operators"
+import _ from "lodash"
 
-import * as taxonSvc from "../lib/taxon";
-import { Taxon } from "../lib/taxon";
-import { useCurrentOrganization } from "../lib/user";
+import * as TaxonService from "../lib/taxon"
+import { Taxon, TaxonFormValues } from "../lib/taxon"
+import { currentOrganization$ } from "../lib/user"
+import { useExpiringState, useParamsObservable } from "../hooks"
+import { isNotEmpty } from "../lib/observables"
 
-interface TaxonFormProps {
-  taxon: Taxon;
+interface Props {
+  taxon: Taxon
+  onSubmit: (values: TaxonFormValues) => Observable<any>
 }
 
 interface ParentCompletion {
-  label: string;
-  taxon: Taxon;
+  label: string
+  taxon: Taxon
 }
 
-const TaxonForm: React.FC<TaxonFormProps> = ({ taxon }) => {
-  const [org, ,] = useCurrentOrganization();
-  const [parentCompletions, setParentCompletions] = useState<
-    ParentCompletion[]
-  >([]);
-  const [selectedParents, setSelectedParents] = useState<
-    ParentCompletion[] | undefined
-  >([]);
+export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
+  // const [org, ,] = useCurrentOrganization();
+  const params$ = useParamsObservable<{ id: string }>()
+  const [success, setSuccess] = useExpiringState(false, 1000)
+  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
+  const [selectedParents, setSelectedParents] = useState<ParentCompletion[] | undefined>(
+    [],
+  )
+
+  const [parentCompletions, updateParentCompletions] = useObservableState($input =>
+    $input.pipe(
+      mergeMap(input =>
+        iif(
+          () => _.isString(input),
+          // if the input is a string then search for completions
+          org$.pipe(
+            switchMap(org => TaxonService.search(org.id, input)),
+            map(taxa => taxa.map(taxon => ({ label: taxon.name, taxon }))),
+          ),
+          // if the input is not a string then assume it's a taxon and set it
+          // as the only completion
+          of([{ label: input.name, taxon: input }]).pipe(
+            tap(completions => setSelectedParents(completions)),
+          ),
+        ),
+      ),
+    ),
+  )
 
   useEffect(() => {
-    const parentCompletions = taxon.parent
-      ? [{ label: taxon.parent.name, taxon: taxon.parent }]
-      : [];
-    setSelectedParents(parentCompletions);
-    setParentCompletions(parentCompletions);
-  }, [taxon.id]);
-
-  async function handleSubmit(
-    values: Taxon,
-    { setSubmitting, resetForm }: FormikHelpers<Taxon>
-  ) {
-    const request =
-      values.id > 0
-        ? taxonSvc.update(org.id, values.id, values)
-        : taxonSvc.create(org.id, values);
-
-    try {
-      const savedTaxon = await request;
-      /* setTaxon(savedTaxon); */
-      resetForm({ values: savedTaxon });
-    } catch (err) {
-      // TODO: handle errors
-      console.error(err);
-    }
-    setSubmitting(false);
-  }
-
-  async function handleParentSearchChange(query: string) {
-    if (query.length < 3) {
-      return;
-    }
-    try {
-      const taxa = await taxonSvc.search(org.id, query);
-      const items = taxa.map(taxon => {
-        return {
-          label: taxon.name,
-          taxon: taxon
-        };
-      });
-      setParentCompletions(items);
-    } catch (err) {
-      // TODO: handle error
-      console.error(err);
-    }
-  }
+    updateParentCompletions(taxon.parent)
+  }, [taxon])
 
   function handleParentChange(selectedOptions: any) {
-    setSelectedParents(selectedOptions);
-    let txn = JSON.parse(JSON.stringify(taxon)); // deep clone
-    if (!!selectedOptions && selectedOptions.length) {
-      txn.parentId = selectedOptions[0].taxon.id;
-      txn.parent = selectedOptions[0].taxon;
-    } else {
-      txn.parentId = null;
-      txn.parent = undefined;
-    }
-    /* setTaxon(txn); */
+    setSelectedParents(selectedOptions)
+  }
+
+  function handleSubmit(
+    values: TaxonFormValues,
+    { setSubmitting }: FormikHelpers<Taxon>,
+  ) {
+    values.parentId = (selectedParents as ParentCompletion[])[0].taxon.id
+    onSubmit(values)
+      .pipe(
+        tap(() => setSubmitting(false)),
+        tap(() => setSuccess(true)),
+      )
+      .subscribe()
   }
 
   return (
-    <Formik
-      enableReinitialize={true}
-      initialValues={taxon}
-      onSubmit={handleSubmit}
-    >
+    <Formik enableReinitialize={true} initialValues={taxon} onSubmit={handleSubmit}>
       {({ values, handleChange }) => (
         <Form>
           <EuiForm>
@@ -114,7 +99,7 @@ const TaxonForm: React.FC<TaxonFormProps> = ({ taxon }) => {
                 options={parentCompletions}
                 selectedOptions={selectedParents}
                 onChange={handleParentChange}
-                onSearchChange={handleParentSearchChange}
+                onSearchChange={updateParentCompletions}
               />
             </EuiFormRow>
             <EuiFormRow label="Rank">
@@ -124,14 +109,19 @@ const TaxonForm: React.FC<TaxonFormProps> = ({ taxon }) => {
                 onChange={handleChange}
               />
             </EuiFormRow>
-            <EuiButton fill type="submit">
-              Save
-            </EuiButton>
+            <div style={{ marginTop: "20px" }}>
+              <EuiButton fill type="submit">
+                Save
+              </EuiButton>
+              {success && (
+                <EuiTextColor color="secondary" style={{ marginLeft: "20px" }}>
+                  Success!
+                </EuiTextColor>
+              )}
+            </div>
           </EuiForm>
         </Form>
       )}
     </Formik>
-  );
-};
-
-export default TaxonForm;
+  )
+}
