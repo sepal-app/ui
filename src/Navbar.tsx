@@ -18,7 +18,12 @@ import { logout } from "./lib/auth"
 import { currentOrganization$, currentUser$ } from "./lib/user"
 import { Organization } from "./lib/organization"
 
-export const Navbar: React.FC = () => {
+interface Props {
+  hideSearch?: boolean
+  hideOrgMenu?: boolean
+}
+
+export const Navbar: React.FC<Props> = ({ hideSearch, hideOrgMenu }) => {
   const history = useHistory()
   const [query, setQuery] = useState()
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -73,7 +78,7 @@ export const Navbar: React.FC = () => {
       currentUser?.organizations?.map((org) => {
         return {
           value: org.id.toString(),
-          inputDisplay: org.name,
+          inputDisplay: org.shortName ?? org.name,
         }
       }) ?? []
 
@@ -128,11 +133,13 @@ export const Navbar: React.FC = () => {
       </EuiHeaderSection>
 
       <EuiHeaderSection grow={true} className="Navbar--searchSection">
-        {renderSearch()}
+        {!hideSearch && renderSearch()}
       </EuiHeaderSection>
 
       <EuiHeaderSection side="right">
-        <EuiHeaderSectionItem border="none">{renderOrgMenu()}</EuiHeaderSectionItem>
+        {!hideOrgMenu && (
+          <EuiHeaderSectionItem border="none">{renderOrgMenu()}</EuiHeaderSectionItem>
+        )}
         <EuiHeaderSectionItem border="none">{renderUserMenu()}</EuiHeaderSectionItem>
       </EuiHeaderSection>
     </EuiHeader>

@@ -6,15 +6,22 @@ import { Organization } from "./organization"
 const currentUserKey = "current_user"
 const currentOrganizationKey = "current_organization"
 
+const basePath = `/v1/users/`
+
 export interface User {
   id: number
-  firstName: string
   username: string
   email: string
+  firstName: string
+  lastName: string
   defaultOrganizationId: number
 
   organizations: Organization[]
 }
+
+export type UserFormValues = Pick<User, "username" | "email" | "firstName" | "lastName">
+
+export type UserCreateFormValues = UserFormValues & { password: string }
 
 const initialUserData = localStorage.getItem(currentUserKey)
 
@@ -22,7 +29,7 @@ export const currentUser$ = new BehaviorSubject<User | null>(
   initialUserData ? JSON.parse(initialUserData) : null,
 )
 
-currentUser$.subscribe((value) => {
+currentUser$.subscribe(value => {
   if (value) {
     localStorage.setItem(currentUserKey, JSON.stringify(value))
   } else {
@@ -40,7 +47,7 @@ export const currentOrganization$ = new BehaviorSubject<Organization | null>(
     : null,
 )
 
-currentOrganization$.subscribe((value) => {
+currentOrganization$.subscribe(value => {
   if (value) {
     localStorage.setItem(currentOrganizationKey, JSON.stringify(value))
   } else {
@@ -48,12 +55,36 @@ currentOrganization$.subscribe((value) => {
   }
 })
 
-async function create() {
-  // TODO:
-}
-
 export const me = (): Observable<User> => {
   return api.get<User>("/v1/me/")
 }
 
-// export { create, me, useCurrentOrganization, useCurrentUser };
+export const get = (
+  id: string | number,
+  options?: { expand?: string[]; include?: string[] },
+): Observable<User> => {
+  const params = new URLSearchParams()
+  if (options && !!options.expand) {
+    params.append("expand", options.expand.join(","))
+  }
+  if (options && !!options.include) {
+    params.append("include", options.include.join(","))
+  }
+  const queryParams = "?".concat(params.toString())
+  const path = [basePath, id, queryParams].join("/")
+  return api.get(path)
+}
+
+// export const create = (data: UserCreateFormValues): Observable<User> => {
+//   return api.post<User, UserFormValues>(basePath, data)
+//   // TODO: send confirm email email
+// }
+
+export const update = (id: string | number, data: UserFormValues): Observable<User> => {
+  const path = [basePath, id].join("/").concat("/")
+  return api.patch<User, UserFormValues>(path, data)
+}
+
+export const resetPassword = () => {
+  // TODO: send reset password email
+}

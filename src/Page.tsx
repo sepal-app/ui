@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react"
+import React, { ComponentProps, ReactNode } from "react"
 import {
   EuiPage,
   EuiPageBody,
@@ -13,28 +13,29 @@ import {
 
 import { Navbar } from "./Navbar"
 
-interface PageProps {
+interface Props {
   pageTitle?: string
   contentTitle?: string
   children: ReactNode
+  navbarOptions?: ComponentProps<typeof Navbar>
 }
 
-const Page = (props: PageProps) => {
-  const header = props.pageTitle && (
+const Page: React.FC<Props> = ({ pageTitle, contentTitle, children, navbarOptions }) => {
+  const header = pageTitle && (
     <EuiPageHeader>
       <EuiPageHeaderSection>
         <EuiTitle size="l">
-          <h1>{props.pageTitle}</h1>
+          <h1>{pageTitle}</h1>
         </EuiTitle>
       </EuiPageHeaderSection>
     </EuiPageHeader>
   )
 
-  const contentHeader = props.contentTitle && (
+  const contentHeader = contentTitle && (
     <EuiPageContentHeader>
       <EuiPageContentHeaderSection>
         <EuiTitle>
-          <h2>{props.contentTitle}</h2>
+          <h2>{contentTitle}</h2>
         </EuiTitle>
       </EuiPageContentHeaderSection>
     </EuiPageContentHeader>
@@ -42,13 +43,13 @@ const Page = (props: PageProps) => {
 
   return (
     <>
-      <Navbar />
+      <Navbar {...navbarOptions} />
       <EuiPage>
         <EuiPageBody>
           {header}
           <EuiPageContent>
             {contentHeader}
-            <EuiPageContentBody>{props.children}</EuiPageContentBody>
+            <EuiPageContentBody>{children}</EuiPageContentBody>
           </EuiPageContent>
         </EuiPageBody>
       </EuiPage>

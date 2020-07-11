@@ -38,6 +38,8 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
     [],
   )
 
+  // const meta = useObservableState(() => TaxonService.meta())
+
   const [parentCompletions, updateParentCompletions] = useObservableState($input =>
     $input.pipe(
       mergeMap(input =>

@@ -14,10 +14,10 @@ import { catchError, map, mergeMap, switchMap, tap } from "rxjs/operators"
 import _ from "lodash"
 
 import Page from "./Page"
-import * as accessionSvc from "./lib/accession"
+import * as AccessionService from "./lib/accession"
 import { AccessionFormValues } from "./lib/accession"
 import { currentOrganization$ } from "./lib/user"
-import * as taxonSvc from "./lib/taxon"
+import * as TaxonService from "./lib/taxon"
 import { Taxon } from "./lib/taxon"
 import { isNotEmpty } from "./lib/observables"
 import { useExpiringState, useParamsObservable } from "./hooks"
@@ -37,28 +37,28 @@ export const AccessionForm: React.FC = () => {
     zip(params$, org$).pipe(
       // TODO: add an iif so that we can either set the accession or look it up
       switchMap(([{ id }, org]) =>
-        accessionSvc.get(org.id, id, {
+        AccessionService.get(org.id, id, {
           expand: ["taxon"],
         }),
       ),
-      tap(acc => updateTaxonCompletions(acc.taxon)),
+      tap((acc) => updateTaxonCompletions(acc.taxon)),
     ),
   )
 
-  const [taxonCompletions, updateTaxonCompletions] = useObservableState($input =>
+  const [taxonCompletions, updateTaxonCompletions] = useObservableState(($input) =>
     $input.pipe(
-      mergeMap(input =>
+      mergeMap((input) =>
         iif(
           () => _.isString(input),
           // if the input is a string then search for completions
           org$.pipe(
-            switchMap(org => taxonSvc.search(org.id, input)),
-            map(taxa => taxa.map(taxon => ({ label: taxon.name, taxon }))),
+            switchMap((org) => TaxonService.search(org.id, input)),
+            map((taxa) => taxa.map((taxon) => ({ label: taxon.name, taxon }))),
           ),
           // if the input is not a string then assume it's a taxon and set it
           // as the only completion
           of([{ label: input.name, taxon: input }]).pipe(
-            tap(completions => setSelectedTaxa(completions)),
+            tap((completions) => setSelectedTaxa(completions)),
           ),
         ),
       ),
@@ -79,11 +79,11 @@ export const AccessionForm: React.FC = () => {
         mergeMap(([{ id }, org]) =>
           iif(
             () => !id,
-            accessionSvc.create(org.id, values),
-            accessionSvc.update(org.id, id, values),
+            AccessionService.create(org.id, values),
+            AccessionService.update(org.id, id, values),
           ),
         ),
-        catchError(err => {
+        catchError((err) => {
           // this.notificationSvc.error("Search failed.");
           console.log(err)
           return EMPTY

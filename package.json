@@ -1,6 +1,7 @@
 {
   "name": "sepal",
   "version": "0.1.0",
+  "license": "MPL-2.0",
   "private": true,
   "dependencies": {
     "@elastic/datemath": "^5.0.2",

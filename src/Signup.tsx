@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React from "react"
 import { useHistory } from "react-router-dom"
 import {
   EuiButton,
@@ -15,53 +15,47 @@ import {
 import { Form, Formik } from "formik"
 import { useObservableState } from "observable-hooks"
 import { EMPTY } from "rxjs"
-import { catchError, map, switchMap, tap } from "rxjs/operators"
+import { catchError, map, switchMap } from "rxjs/operators"
 
+import * as UserService from "./lib/user"
+import { User, UserCreateFormValues } from "./lib/user"
 import { login, isLoggedIn$ } from "./lib/auth"
 import { me, currentUser$, currentOrganization$ } from "./lib/user"
 
-interface LoginValues {
-  username: string
-  password: string
-}
-
-export const Login: React.FC = () => {
+export const Signup: React.FC = () => {
   const isLoggedIn = useObservableState(isLoggedIn$)
   const history = useHistory()
-  const [errorMessage, setErrorMessage] = useState("")
 
   if (isLoggedIn) {
-    history.replace("/search")
+    history.replace("/")
   }
 
-  function handleSubmit(values: LoginValues) {
-    setErrorMessage("")
-    login(values.username, values.password)
+  function handleSubmit(values: UserCreateFormValues) {
+    UserService.create(values)
       .pipe(
-        switchMap(me),
-        map((user) => {
-          currentUser$.next(user)
-          const org = user.organizations?.find(
-            (org) => org.id === user.defaultOrganizationId,
-          )
-          currentOrganization$.next(org ?? user.organizations[0])
-        }),
+        map((user) => currentUser$.next(user)),
+        map(() => history.replace("/")),
+        // TODO: redirect to create new organization page
         catchError((e) => {
-          if (e.status === 401 || e.status === 400) {
-            setErrorMessage("Invalid login")
-          } else {
-            setErrorMessage("Unknown error")
-          }
+          // TODO: handle error
+          console.log(e)
           return EMPTY
         }),
       )
-      .subscribe()
+      .subscribe((r) => console.log(r))
   }
 
   return (
     <Formik
       enableReinitialize={true}
-      initialValues={{ username: "", password: "" }}
+      initialValues={{
+        username: "",
+        email: "",
+        firstName: "",
+        lastName: "",
+        password: "",
+        confirmPassword: "",
+      }}
       onSubmit={handleSubmit}
     >
       {({ values, handleChange }) => (
@@ -70,13 +64,33 @@ export const Login: React.FC = () => {
             <EuiFlexItem style={{ alignItems: "center" }}>
               <EuiForm style={{ padding: "2rem", minWidth: "400px" }} component="form">
                 <EuiText>
-                  <p style={{ marginBottom: "0" }}>Welcome to</p>
-                  <h1 style={{ marginTop: "0" }}>Sepal</h1>
+                  <h2 style={{ marginBottom: "0" }}>Create an account</h2>
                 </EuiText>
-                <EuiFormRow label="User" style={{ marginTop: "1rem" }}>
+                <EuiFormRow label="Username" style={{ marginTop: "1rem" }}>
                   <EuiFieldText
                     name="username"
                     value={values.username}
+                    onChange={handleChange}
+                  />
+                </EuiFormRow>
+                <EuiFormRow label="Email">
+                  <EuiFieldText
+                    name="email"
+                    value={values.email}
+                    onChange={handleChange}
+                  />
+                </EuiFormRow>
+                <EuiFormRow label="First name">
+                  <EuiFieldText
+                    name="firstName"
+                    value={values.firstName}
+                    onChange={handleChange}
+                  />
+                </EuiFormRow>
+                <EuiFormRow label="Last name">
+                  <EuiFieldText
+                    name="lastName"
+                    value={values.lastName}
                     onChange={handleChange}
                   />
                 </EuiFormRow>
@@ -87,18 +101,20 @@ export const Login: React.FC = () => {
                     onChange={handleChange}
                   />
                 </EuiFormRow>
+                <EuiFormRow label="Confirm password">
+                  <EuiFieldPassword
+                    name="confirmPassword"
+                    value={values.confirmPassword}
+                    onChange={handleChange}
+                  />
+                </EuiFormRow>
                 <EuiSpacer />
                 <EuiButton type="submit" fill>
-                  Sign In
+                  Signup
                 </EuiButton>
                 <EuiLink href="/signup" style={{ marginLeft: "20px", fontSize: "80%" }}>
-                  Don't have an account?
+                  Already have an account?
                 </EuiLink>
-                {errorMessage && (
-                  <div>
-                    <EuiText color="danger">{errorMessage}</EuiText>
-                  </div>
-                )}
               </EuiForm>
             </EuiFlexItem>
             <EuiFlexItem grow={2}>

@@ -1,4 +1,4 @@
-import { Observable, from } from "rxjs"
+import { Observable, from, throwError } from "rxjs"
 import { map, switchMap, tap } from "rxjs/operators"
 
 import { toCamelCase, toSnakeCase } from "./case"
@@ -46,7 +46,7 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
 
 const request = <T>(url: string, options?: RequestInit): Observable<T> =>
   accessToken$.pipe(
-    switchMap(accessToken =>
+    switchMap((accessToken) =>
       from(
         fetch(url, {
           headers: {
@@ -59,30 +59,36 @@ const request = <T>(url: string, options?: RequestInit): Observable<T> =>
         }),
       ),
     ),
-    tap(resp => {
+    tap((resp) => {
       if (resp?.status === 401) {
         // TODO: first try to refresh the token
         logout()
       }
     }),
+    map((resp) => {
+      if (!resp.ok) throw resp
+      return resp
+    }),
     // TODO: make sure response is JSON
-    switchMap(resp => from(resp.json())),
+    switchMap((resp) => from(resp.json())),
   )
 
 export const get = <T>(path: string): Observable<T> =>
-  request<T>(baseUrl.concat(path), { method: "GET" }).pipe(map(data => toCamelCase(data)))
+  request<T>(baseUrl.concat(path), { method: "GET" }).pipe(
+    map((data) => toCamelCase(data)),
+  )
 
 export const post = <T, K>(path: string, data: K): Observable<T> =>
   request<T>(baseUrl.concat(path), {
     method: "POST",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(map(data => toCamelCase(data)))
+  }).pipe(map((data) => toCamelCase(data)))
 
 export const patch = <T, K>(path: string, data: K): Observable<T> =>
   request<T>(baseUrl.concat(path), {
     method: "PATCH",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(map(data => toCamelCase(data)))
+  }).pipe(map((data) => toCamelCase(data)))
 
 export const del = (path: string): Observable<any> =>
   request<any>(baseUrl.concat(path), {
