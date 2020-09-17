@@ -1,6 +1,7 @@
-import React from "react"
+import React, { ComponentProps, ComponentType } from "react"
 import { Redirect, Route, Switch } from "react-router-dom"
 import { useObservableState } from "observable-hooks"
+import { useAuth0, withAuthenticationRequired } from "@auth0/auth0-react"
 
 import { AccessionForm } from "./AccessionForm"
 import { Home } from "./Home"
@@ -11,24 +12,35 @@ import { Search } from "./Search"
 import { Settings } from "./Settings"
 import { Signup } from "./Signup"
 import { TaxonForm } from "./TaxonForm"
-import { isLoggedIn$ } from "./lib/auth"
-import { currentUser$ } from "./lib/user"
+import { organizations$ } from "./lib/user"
 
-const PrivateRoute = ({ component, ...rest }: any) => {
-  const isLoggedIn = useObservableState(isLoggedIn$)
-  const user = useObservableState(currentUser$)
-  const hasOrgs = user?.organizations?.length ?? false
-  const path = rest.path
+const Loading = () => <div>Redirecting to login...</div>
 
-  if (!isLoggedIn) {
+const PrivateRoute: React.FC<ComponentProps<typeof Route>> = ({
+  component,
+  path,
+  ...args
+}) => {
+  const { isAuthenticated } = useAuth0()
+  const orgs = organizations$.value
+
+  if (!isAuthenticated) {
     return <Redirect to={{ pathname: "/login" }} />
   }
 
-  if (!hasOrgs && path !== "/organization") {
-    return <Redirect from={path} to={`/organization?redirect=${path}`} />
+  if (!orgs?.length && path !== "/organization") {
+    return <Redirect from={path as string} to={`/organization?redirect=${path}`} />
   }
 
-  return <Route {...rest} component={component} />
+  return (
+    <Route
+      component={withAuthenticationRequired(component as ComponentType, {
+        onRedirecting: () => <Loading />,
+      })}
+      path={path}
+      {...args}
+    />
+  )
 }
 
 const Router: React.FC = () => {

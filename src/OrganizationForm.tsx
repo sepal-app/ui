@@ -1,24 +1,16 @@
-import React, { useState } from "react"
-import {
-  EuiButton,
-  EuiComboBox,
-  EuiFieldText,
-  EuiForm,
-  EuiFormRow,
-  EuiTextColor,
-} from "@elastic/eui"
+import React from "react"
+import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import { useObservable, useObservableState } from "observable-hooks"
-import { EMPTY, iif, of, zip } from "rxjs"
+import { useObservableState } from "observable-hooks"
+import { EMPTY, iif } from "rxjs"
 import { catchError, filter, map, mergeMap, switchMap, tap } from "rxjs/operators"
 import _ from "lodash"
 
 import Page from "./Page"
 import * as UserService from "./lib/user"
-import { currentUser$, currentOrganization$ } from "./lib/user"
+import { currentOrganization$, currentUser$, organizations$ } from "./lib/user"
 import * as OrganizationService from "./lib/organization"
-import { Organization, OrganizationFormValues } from "./lib/organization"
-import { isNotEmpty } from "./lib/observables"
+import { OrganizationFormValues } from "./lib/organization"
 import { useExpiringState, useParamsObservable } from "./hooks"
 
 export const OrganizationForm: React.FC = () => {
@@ -26,7 +18,7 @@ export const OrganizationForm: React.FC = () => {
   const params$ = useParamsObservable<{ id: string }>()
   const [success, setSuccess] = useExpiringState(false, 1000)
   const title = useObservableState(
-    params$.pipe(map(({ id }) => (id ? "Edit organization" : "Create organization"))),
+    params$.pipe(map(({ id }) => (id ? "Edit organization" : "Create an organization"))),
   )
   const organization = useObservableState(
     params$.pipe(
@@ -48,23 +40,18 @@ export const OrganizationForm: React.FC = () => {
         mergeMap(({ id }) =>
           iif(
             () => !id,
-            OrganizationService.create(values),
+            OrganizationService.create(values).pipe(
+              map((org) => {
+                // set as current org and update list of user's organizations
+                currentOrganization$.next(org)
+                const orgs = [...organizations$.value, org]
+                organizations$.next(orgs)
+                // TODO: if has a redirect param then follow
+              }),
+            ),
             OrganizationService.update(id, values),
           ),
         ),
-        switchMap(UserService.me),
-        map((user) => {
-          console.log(user)
-          currentUser$.next(user)
-          const org = user.organizations?.find(
-            (org) => org.id === user.defaultOrganizationId,
-          )
-          currentOrganization$.next(org ?? user.organizations[0])
-        }),
-        tap(() => {
-          // TODO: if we have a redirect param then go there after 1-2 seconds
-          // TODO: if we're creating a new organiztion redirect to the new page with the id param
-        }),
         catchError((err) => {
           // this.notificationSvc.error("Search failed.");
           console.log(err)
@@ -72,7 +59,6 @@ export const OrganizationForm: React.FC = () => {
         }),
         tap(() => setSubmitting(false)),
         tap(() => setSuccess(true)),
-        // TODO: update accession?
       )
       .subscribe()
   }

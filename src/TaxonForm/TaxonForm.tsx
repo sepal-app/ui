@@ -2,7 +2,8 @@ import React from "react"
 import { EuiTabbedContent } from "@elastic/eui"
 import { useObservable, useObservableState } from "observable-hooks"
 import { EMPTY, Observable, iif, zip } from "rxjs"
-import { catchError, mergeMap, switchMap } from "rxjs/operators"
+import { catchError, filter, mergeMap, switchMap, tap } from "rxjs/operators"
+import { useParams } from "react-router-dom"
 
 import Page from "../Page"
 import * as TaxonService from "../lib/taxon"
@@ -15,12 +16,14 @@ import { GeneralTab } from "./GeneralTab"
 
 export const TaxonForm: React.FC = () => {
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
+  const params = useParams()
+  console.log(`params: ${JSON.stringify(params)}`)
   const params$ = useParamsObservable<{ id: string }>()
 
   const [taxon] = useObservableState(
     () =>
       zip(params$, org$).pipe(
-        // TODO: add an iif so that we can either set the accession or look it up
+        filter(([{ id }]) => !!id),
         switchMap(([{ id }, org]) =>
           TaxonService.get(org.id, id, {
             expand: ["parent"],
@@ -45,7 +48,7 @@ export const TaxonForm: React.FC = () => {
           TaxonService.update(org.id, id, values),
         ),
       ),
-      catchError(err => {
+      catchError((err) => {
         // this.notificationSvc.error("Search failed.");
         console.log(err)
         return EMPTY

@@ -6,7 +6,7 @@ import { Organization } from "./organization"
 const currentUserKey = "current_user"
 const currentOrganizationKey = "current_organization"
 
-const basePath = `/v1/users/`
+const basePath = `/users/`
 
 export interface User {
   id: number
@@ -16,7 +16,7 @@ export interface User {
   lastName: string
   defaultOrganizationId: number
 
-  organizations: Organization[]
+  // organizations: Organization[]
 }
 
 export type UserFormValues = Pick<User, "username" | "email" | "firstName" | "lastName">
@@ -29,13 +29,15 @@ export const currentUser$ = new BehaviorSubject<User | null>(
   initialUserData ? JSON.parse(initialUserData) : null,
 )
 
-currentUser$.subscribe(value => {
+currentUser$.subscribe((value) => {
   if (value) {
     localStorage.setItem(currentUserKey, JSON.stringify(value))
   } else {
     localStorage.removeItem(currentUserKey)
   }
 })
+
+export const organizations$ = new BehaviorSubject<Organization[]>([])
 
 const initialOrganizationData = localStorage.getItem(currentOrganizationKey)
 
@@ -47,7 +49,7 @@ export const currentOrganization$ = new BehaviorSubject<Organization | null>(
     : null,
 )
 
-currentOrganization$.subscribe(value => {
+currentOrganization$.subscribe((value) => {
   if (value) {
     localStorage.setItem(currentOrganizationKey, JSON.stringify(value))
   } else {

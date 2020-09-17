@@ -9,7 +9,7 @@ import {
 } from "@elastic/eui"
 import { useSearchParams } from "./hooks/params"
 import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
-import { switchMap } from "rxjs/operators"
+import { switchMap, tap } from "rxjs/operators"
 import { Observable, combineLatest } from "rxjs"
 
 import Page from "./Page"
@@ -25,16 +25,25 @@ import { isNotEmpty } from "./lib/observables"
 type SearchFunc<T> = (orgId: number, q: string) => Observable<T[]>
 
 export const Search: React.FC = () => {
+  console.log("Search()")
   const [selected, setSelected] = useState()
   const [selectedType, setSelectedType] = useState()
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const params = useSearchParams()
-  const query$ = useObservable(input$ => pluckFirst(input$).pipe(isNotEmpty()), [
-    params.get("q"),
-  ])
+  const query$ = useObservable(
+    (input$) =>
+      pluckFirst(input$).pipe(
+        tap((input) => console.log(input)),
+        isNotEmpty(),
+      ),
+    [params.get("q")],
+  )
+
+  query$.subscribe((q) => console.log(`q: ${q}`))
 
   function makeSearchObservable<T>(search: SearchFunc<T>) {
     return combineLatest(org$, query$).pipe(
+      tap(([org, query]) => console.log(`query: ${query}`)),
       switchMap(([org, query]) => search(org.id, query)),
     )
   }
@@ -54,7 +63,7 @@ export const Search: React.FC = () => {
       setSelected(item)
       setSelectedType(type)
     }
-    const accessionItems = accessions?.map(accession => {
+    const accessionItems = accessions?.map((accession) => {
       return (
         <EuiListGroupItem
           label={
@@ -69,7 +78,7 @@ export const Search: React.FC = () => {
       )
     })
 
-    const taxonItems = taxa?.map(taxon => {
+    const taxonItems = taxa?.map((taxon) => {
       return (
         <EuiListGroupItem
           label={

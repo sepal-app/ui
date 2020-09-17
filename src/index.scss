@@ -1,23 +1,23 @@
 // Increase the based font size for Elastic UI;
 $euiFontSize: 18px;
 
-@import '~@elastic/eui/src/theme_light.scss';
+@import "~@elastic/eui/src/theme_light.scss";
 
-
-html, body {
-    // The default letter spacing in ElasticUI is a bit tight.
-    letter-spacing: .02em;
+html,
+body {
+  // The default letter spacing in ElasticUI is a bit tight.
+  letter-spacing: 0.02em;
 }
 
 .Navbar--searchSection {
-    justify-content: center;
-    align-items: center;
+  justify-content: flex-start;
+  align-items: center;
 
-    input {
-        padding: 8px;
-        border: solid 1px #ddd;
-        border-radius: 3px;
-        min-width: 400px;
-        font-size: $euiFontSizeS;
-    }
+  input {
+    padding: 8px;
+    border: solid 1px #ddd;
+    border-radius: 3px;
+    min-width: 400px;
+    font-size: $euiFontSizeS;
+  }
 }

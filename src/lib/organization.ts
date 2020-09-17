@@ -2,7 +2,7 @@ import { Observable } from "rxjs"
 
 import * as api from "./api"
 
-const basePath = `/v1/orgs/`
+const basePath = `/orgs`
 
 export interface Organization {
   id: number
@@ -15,6 +15,10 @@ export type OrganizationFormValues = Pick<
   Organization,
   "name" | "shortName" | "abbreviation"
 >
+
+export const list = (): Observable<Organization[]> => {
+  return api.get<Organization[]>(basePath)
+}
 
 export const get = (
   id: string | number,
@@ -33,6 +37,8 @@ export const get = (
 }
 
 export const create = (data: OrganizationFormValues): Observable<Organization> => {
+  console.log("OrganizationService.create()")
+  console.log(data)
   return api.post<Organization, OrganizationFormValues>(basePath, data)
 }
 
@@ -40,6 +46,8 @@ export const update = (
   id: string | number,
   data: OrganizationFormValues,
 ): Observable<Organization> => {
+  console.log("OrganizationService.update()")
+  console.log(data)
   const path = [basePath, id].join("/").concat("/")
   return api.patch<Organization, OrganizationFormValues>(path, data)
 }

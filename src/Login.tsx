@@ -16,6 +16,7 @@ import { Form, Formik } from "formik"
 import { useObservableState } from "observable-hooks"
 import { EMPTY } from "rxjs"
 import { catchError, map, switchMap, tap } from "rxjs/operators"
+import { useAuth0 } from "@auth0/auth0-react"
 
 import { login, isLoggedIn$ } from "./lib/auth"
 import { me, currentUser$, currentOrganization$ } from "./lib/user"
@@ -26,36 +27,22 @@ interface LoginValues {
 }
 
 export const Login: React.FC = () => {
-  const isLoggedIn = useObservableState(isLoggedIn$)
+  // const isLoggedIn = useObservableState(isLoggedIn$)
   const history = useHistory()
   const [errorMessage, setErrorMessage] = useState("")
+  const { isAuthenticated, loginWithRedirect } = useAuth0()
 
-  if (isLoggedIn) {
+  console.log(`Login.isAuthenticated: ${isAuthenticated}`)
+  if (isAuthenticated) {
     history.replace("/search")
   }
 
+  console.log("loginWithRedirect()")
+  loginWithRedirect()
+
   function handleSubmit(values: LoginValues) {
     setErrorMessage("")
-    login(values.username, values.password)
-      .pipe(
-        switchMap(me),
-        map((user) => {
-          currentUser$.next(user)
-          const org = user.organizations?.find(
-            (org) => org.id === user.defaultOrganizationId,
-          )
-          currentOrganization$.next(org ?? user.organizations[0])
-        }),
-        catchError((e) => {
-          if (e.status === 401 || e.status === 400) {
-            setErrorMessage("Invalid login")
-          } else {
-            setErrorMessage("Unknown error")
-          }
-          return EMPTY
-        }),
-      )
-      .subscribe()
+    loginWithRedirect()
   }
 
   return (

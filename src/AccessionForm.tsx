@@ -10,7 +10,7 @@ import {
 import { Form, Formik, FormikHelpers } from "formik"
 import { useObservable, useObservableState } from "observable-hooks"
 import { EMPTY, iif, of, zip } from "rxjs"
-import { catchError, map, mergeMap, switchMap, tap } from "rxjs/operators"
+import { catchError, filter, map, mergeMap, switchMap, tap } from "rxjs/operators"
 import _ from "lodash"
 
 import Page from "./Page"
@@ -35,7 +35,7 @@ export const AccessionForm: React.FC = () => {
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const [accession] = useObservableState(() =>
     zip(params$, org$).pipe(
-      // TODO: add an iif so that we can either set the accession or look it up
+      filter(([{ id }]) => !!id),
       switchMap(([{ id }, org]) =>
         AccessionService.get(org.id, id, {
           expand: ["taxon"],

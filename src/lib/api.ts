@@ -1,5 +1,6 @@
 import { Observable, from, throwError } from "rxjs"
-import { map, switchMap, tap } from "rxjs/operators"
+import { map, switchMap, tap, takeLast } from "rxjs/operators"
+import { fromFetch } from "rxjs/fetch"
 
 import { toCamelCase, toSnakeCase } from "./case"
 import { accessToken$, logout } from "./auth"
@@ -7,6 +8,11 @@ import { accessToken$, logout } from "./auth"
 const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
 
 export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => string) => ({
+  list: (orgId: string | number): Observable<T[]> => {
+    const path = pathTemplate(orgId).concat("/")
+    return get<T[]>(path)
+  },
+
   get: (
     orgId: string | number,
     id: string | number,
@@ -45,20 +51,15 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
 // }
 
 const request = <T>(url: string, options?: RequestInit): Observable<T> =>
-  accessToken$.pipe(
-    switchMap((accessToken) =>
-      from(
-        fetch(url, {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-            ...options?.headers,
-          },
-          ...options,
-        }),
-      ),
-    ),
+  fromFetch(url, {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken$.getValue()}`,
+      ...options?.headers,
+    },
+    ...options,
+  }).pipe(
     tap((resp) => {
       if (resp?.status === 401) {
         // TODO: first try to refresh the token
@@ -75,7 +76,11 @@ const request = <T>(url: string, options?: RequestInit): Observable<T> =>
 
 export const get = <T>(path: string): Observable<T> =>
   request<T>(baseUrl.concat(path), { method: "GET" }).pipe(
-    map((data) => toCamelCase(data)),
+    map((data) =>
+      Array.isArray(data)
+        ? ((data.map((d) => toCamelCase(d)) as unknown) as T)
+        : toCamelCase<T>(data),
+    ),
   )
 
 export const post = <T, K>(path: string, data: K): Observable<T> =>

@@ -1,6 +1,8 @@
 import React, { useState, KeyboardEvent } from "react"
 import { useHistory } from "react-router-dom"
 import {
+  EuiContextMenuPanel,
+  EuiContextMenuItem,
   EuiHeader,
   EuiHeaderLogo,
   EuiHeaderSection,
@@ -11,29 +13,38 @@ import {
   EuiKeyPadMenuItem,
   EuiPopover,
   EuiSuperSelect,
+  EuiText,
 } from "@elastic/eui"
 import { useObservableState } from "observable-hooks"
+import { useAuth0 } from "@auth0/auth0-react"
 
-import { logout } from "./lib/auth"
-import { currentOrganization$, currentUser$ } from "./lib/user"
+import { currentOrganization$, currentUser$, organizations$ } from "./lib/user"
 import { Organization } from "./lib/organization"
 
 interface Props {
-  hideSearch?: boolean
+  hideAddMenu?: boolean
   hideOrgMenu?: boolean
+  hideSearch?: boolean
 }
 
-export const Navbar: React.FC<Props> = ({ hideSearch, hideOrgMenu }) => {
+export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }) => {
+  const { logout } = useAuth0()
   const history = useHistory()
   const [query, setQuery] = useState()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showAddMenu, setShowAddMenu] = useState(false)
   const [, setShowOrgMenu] = useState(false)
   const currentUser = useObservableState(currentUser$)
+  const organizations = useObservableState(organizations$)
   const currentOrganization = useObservableState(currentOrganization$)
 
   function renderLogo() {
     return (
-      <EuiHeaderLogo iconType="logoKibana" href="/" aria-label="Got to Sepal ome page">
+      <EuiHeaderLogo
+        iconType="logoKibana"
+        onClick={() => history.push("/")}
+        aria-label="Got to Sepal ome page"
+      >
         Sepal
       </EuiHeaderLogo>
     )
@@ -66,26 +77,27 @@ export const Navbar: React.FC<Props> = ({ hideSearch, hideOrgMenu }) => {
   }
 
   function renderOrgMenu() {
-    let selected = currentOrganization?.id.toString()
+    // let selected = currentOrganization?.id.toString()
     function onChange(value: number) {
-      const org = currentUser?.organizations.find((org) => org.id === value)
+      const org = organizations?.find((org) => org.id === value)
       currentOrganization$.next(org as Organization)
-      // setCurrentOrganization(org as Organization)
-      selected = org?.id?.toString() ?? ""
+      // selected = org?.id?.toString() ?? ""
     }
 
     const options =
-      currentUser?.organizations?.map((org) => {
+      organizations?.map(({ id, shortName, name }) => {
         return {
-          value: org.id.toString(),
-          inputDisplay: org.shortName ?? org.name,
+          value: id.toString(),
+          inputDisplay: shortName.length ? shortName : name,
         }
       }) ?? []
+
+    console.log(`org id: ${currentOrganization?.id}`)
 
     return (
       <EuiSuperSelect
         options={options}
-        valueOfSelected={selected}
+        valueOfSelected={currentOrganization?.id.toString() ?? ""}
         onChange={(value) => onChange(parseInt(value))}
       />
     )
@@ -114,14 +126,41 @@ export const Navbar: React.FC<Props> = ({ hideSearch, hideOrgMenu }) => {
           <EuiKeyPadMenuItem label="Logout" onClick={() => handleLogout()}>
             <EuiIcon type="exit" size="l" />
           </EuiKeyPadMenuItem>
-          {/* <EuiKeyPadMenuItem label="Dashboard" href="#">
-                <EuiIcon type="dashboardApp" size="l" />
-                </EuiKeyPadMenuItem> */}
-
-          {/* <EuiKeyPadMenuItem isDisabled label="Dashboard" href="#">
-                <EuiIcon type="dashboardApp" size="l" />
-                </EuiKeyPadMenuItem> */}
         </EuiKeyPadMenu>
+      </EuiPopover>
+    )
+  }
+  function renderAddMenu() {
+    const button = (
+      <EuiHeaderSectionItemButton
+        aria-label="Add menu"
+        onClick={() => setShowAddMenu(!showAddMenu)}
+      >
+        <EuiText>
+          <span style={{ fontSize: "150%" }}>+</span>
+        </EuiText>
+      </EuiHeaderSectionItemButton>
+    )
+
+    const items = [
+      <EuiContextMenuItem key="accession" onClick={() => history.push("/accession")}>
+        Accession
+      </EuiContextMenuItem>,
+      <EuiContextMenuItem key="location" onClick={() => history.push("/location")}>
+        Location
+      </EuiContextMenuItem>,
+      <EuiContextMenuItem key="taxon" onClick={() => history.push("/taxon")}>
+        Taxon
+      </EuiContextMenuItem>,
+    ]
+
+    return (
+      <EuiPopover
+        button={button}
+        isOpen={showAddMenu}
+        closePopover={() => setShowAddMenu(false)}
+      >
+        <EuiContextMenuPanel items={items} />
       </EuiPopover>
     )
   }
@@ -130,6 +169,9 @@ export const Navbar: React.FC<Props> = ({ hideSearch, hideOrgMenu }) => {
     <EuiHeader>
       <EuiHeaderSection>
         <EuiHeaderSectionItem border="none">{renderLogo()}</EuiHeaderSectionItem>
+      </EuiHeaderSection>
+      <EuiHeaderSection grow={true} style={{ justifyContent: "flex-end" }}>
+        {!hideAddMenu && renderAddMenu()}
       </EuiHeaderSection>
 
       <EuiHeaderSection grow={true} className="Navbar--searchSection">

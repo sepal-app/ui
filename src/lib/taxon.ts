@@ -34,6 +34,7 @@ export const search = (
   query: string,
   // options?: { expand?: string[]; include?: string[] }
 ): Observable<Taxon[]> => {
+  console.log(`Taxon.search: ${query}`)
   const params = new URLSearchParams({ search: query })
   const queryParams = "?".concat(params.toString())
   const path = [basePath(orgId), queryParams].join("/")

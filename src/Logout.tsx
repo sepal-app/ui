@@ -1,11 +1,10 @@
 import React from "react"
-import { useHistory } from "react-router-dom"
-import { logout } from "./lib/auth"
+import { useAuth0 } from "@auth0/auth0-react"
 
 export const Logout: React.FC = () => {
-  const history = useHistory()
-  logout()
-  history.push("/")
+  const { logout } = useAuth0()
+  console.log("Logout()")
+  logout({ returnTo: window.location.origin.concat("/login") })
 
   return (
     <div>

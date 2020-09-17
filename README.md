@@ -1,5 +1,10 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+### Environment Variables
+
+REACT_APP_AUTH0_DOMAIN=""
+REACT_APP_AUTH0_CLIENT_ID=""
+
 ## Available Scripts
 
 In the project directory, you can run:

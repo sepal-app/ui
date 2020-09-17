@@ -40,20 +40,21 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
 
   // const meta = useObservableState(() => TaxonService.meta())
 
-  const [parentCompletions, updateParentCompletions] = useObservableState($input =>
+  const [parentCompletions, updateParentCompletions] = useObservableState(($input) =>
     $input.pipe(
-      mergeMap(input =>
+      tap((input) => console.log(input)),
+      mergeMap((input) =>
         iif(
           () => _.isString(input),
           // if the input is a string then search for completions
           org$.pipe(
-            switchMap(org => TaxonService.search(org.id, input)),
-            map(taxa => taxa.map(taxon => ({ label: taxon.name, taxon }))),
+            switchMap((org) => TaxonService.search(org.id, input)),
+            map((taxa) => taxa.map((taxon) => ({ label: taxon.name, taxon }))),
           ),
           // if the input is not a string then assume it's a taxon and set it
           // as the only completion
           of([{ label: input.name, taxon: input }]).pipe(
-            tap(completions => setSelectedParents(completions)),
+            tap((completions) => setSelectedParents(completions)),
           ),
         ),
       ),
@@ -61,7 +62,9 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
   )
 
   useEffect(() => {
-    updateParentCompletions(taxon.parent)
+    if (taxon?.parent && taxon.parent.id !== -1) {
+      updateParentCompletions(taxon.parent)
+    }
   }, [taxon])
 
   function handleParentChange(selectedOptions: any) {
