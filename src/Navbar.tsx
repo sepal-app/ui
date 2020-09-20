@@ -18,7 +18,7 @@ import {
 import { useObservableState } from "observable-hooks"
 import { useAuth0 } from "@auth0/auth0-react"
 
-import { currentOrganization$, currentUser$, organizations$ } from "./lib/user"
+import { currentOrganization$, organizations$ } from "./lib/user"
 import { Organization } from "./lib/organization"
 
 interface Props {
@@ -34,9 +34,12 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [, setShowOrgMenu] = useState(false)
-  const currentUser = useObservableState(currentUser$)
   const organizations = useObservableState(organizations$)
   const currentOrganization = useObservableState(currentOrganization$)
+
+  if (!currentOrganization && organizations?.length) {
+    currentOrganization$.next(organizations[0])
+  }
 
   function renderLogo() {
     return (
@@ -130,6 +133,7 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
       </EuiPopover>
     )
   }
+
   function renderAddMenu() {
     const button = (
       <EuiHeaderSectionItemButton
