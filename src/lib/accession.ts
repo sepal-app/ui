@@ -35,9 +35,9 @@ export const search = (
   query: string,
   // options?: { expand?: string[]; include?: string[] }
 ): Observable<Accession[]> => {
-  const params = new URLSearchParams({ search: query })
+  const params = new URLSearchParams({ q: query })
   const queryParams = "?".concat(params.toString())
-  const path = [basePath(orgId), queryParams].join("/")
+  const path = [basePath(orgId), queryParams].join("")
   return api.get<AccessionSearchResult>(path).pipe(map((resp) => resp.results))
   // .then((resp: AccessionSearchResult) => resp.results);
 }

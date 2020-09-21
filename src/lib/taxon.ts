@@ -34,9 +34,8 @@ export const search = (
   query: string,
   // options?: { expand?: string[]; include?: string[] }
 ): Observable<Taxon[]> => {
-  console.log(`Taxon.search: ${query}`)
-  const params = new URLSearchParams({ search: query })
+  const params = new URLSearchParams({ q: query })
   const queryParams = "?".concat(params.toString())
-  const path = [basePath(orgId), queryParams].join("/")
+  const path = [basePath(orgId), queryParams].join("")
   return api.get<TaxonSearchResult>(path).pipe(map((resp) => resp.results))
 }

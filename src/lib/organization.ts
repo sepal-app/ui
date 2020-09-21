@@ -2,7 +2,7 @@ import { Observable } from "rxjs"
 
 import * as api from "./api"
 
-const basePath = `/orgs`
+const basePath = `/v1/orgs`
 
 export interface Organization {
   id: number
