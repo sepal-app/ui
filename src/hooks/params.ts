@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { useLocation, useParams } from "react-router-dom"
 import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
 import { Observable } from "rxjs"
@@ -5,7 +6,11 @@ import { map } from "rxjs/operators"
 
 export function useSearchParams(): URLSearchParams {
   const location = useLocation()
-  return new URLSearchParams(location.search)
+  const [searchParams, setSearchParams] = useState(new URLSearchParams())
+  useEffect(() => {
+    setSearchParams(new URLSearchParams(location.search))
+  }, [location, location.search])
+  return searchParams
 }
 
 export const useParamsObservable = <T>() => useObservable(pluckFirst, [useParams<T>()])
