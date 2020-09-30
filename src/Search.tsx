@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import { useLocation, useParams } from "react-router-dom"
 import {
   EuiAccordion,
   EuiListGroup,
@@ -7,10 +8,15 @@ import {
   EuiFlexItem,
   EuiText,
 } from "@elastic/eui"
-import { useSearchParams } from "./hooks/params"
-import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
-import { switchMap, tap } from "rxjs/operators"
-import { Observable, combineLatest } from "rxjs"
+import { useParamsValueObservable } from "./hooks/params"
+import {
+  pluckFirst,
+  useObservable,
+  useObservableGetState,
+  useObservableState,
+} from "observable-hooks"
+import { EMPTY, Observable, combineLatest } from "rxjs"
+import { catchError, map, switchMap, tap } from "rxjs/operators"
 
 import Page from "./Page"
 import * as taxonSvc from "./lib/taxon"
@@ -29,33 +35,29 @@ export const Search: React.FC = () => {
   const [selected, setSelected] = useState()
   const [selectedType, setSelectedType] = useState()
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
-  const params = useSearchParams()
-  const query$ = useObservable(
-    (input$) =>
-      pluckFirst(input$).pipe(
-        tap((input) => console.log(input)),
-        isNotEmpty(),
-      ),
-    [params.get("q")],
-  )
-
-  query$.subscribe((q) => console.log(`q: ${q}`))
+  const query$ = useParamsValueObservable("q")
 
   function makeSearchObservable<T>(search: SearchFunc<T>) {
     return combineLatest(org$, query$).pipe(
-      tap(([org, query]) => console.log(`query: ${query}`)),
-      switchMap(([org, query]) => search(org.id, query)),
+      tap(([_, query]) => console.log(`query: ${query}`)),
+      switchMap(([org, query]) => search(org.id, query as string)),
+      catchError((err) => {
+        // this.notificationSvc.error("Search failed.");
+        // TODO: handle error
+        console.log(err)
+        return EMPTY
+      }),
     )
   }
 
   const [taxa] = useObservableState(
     () => makeSearchObservable<Taxon>(taxonSvc.search),
-    [],
+    [], // initial value
   )
 
   const [accessions] = useObservableState(
     () => makeSearchObservable<Accession>(accessionSvc.search),
-    [],
+    [], // initial value
   )
 
   function renderSearchResults() {

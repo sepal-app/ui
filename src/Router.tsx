@@ -1,6 +1,5 @@
 import React, { ComponentProps, ComponentType } from "react"
 import { Redirect, Route, Switch } from "react-router-dom"
-import { useObservableState } from "observable-hooks"
 import { useAuth0, withAuthenticationRequired } from "@auth0/auth0-react"
 
 import { AccessionForm } from "./AccessionForm"
@@ -12,6 +11,7 @@ import { Search } from "./Search"
 import { Settings } from "./Settings"
 import { Signup } from "./Signup"
 import { TaxonForm } from "./TaxonForm"
+import { LocationForm } from "./LocationForm"
 import { organizations$ } from "./lib/user"
 
 const Loading = () => <div>Redirecting to login...</div>
@@ -51,6 +51,8 @@ const Router: React.FC = () => {
       <PrivateRoute exact path="/taxon" component={TaxonForm} />
       <PrivateRoute exact path="/accession/:id" component={AccessionForm} />
       <PrivateRoute exact path="/accession" component={AccessionForm} />
+      <PrivateRoute exact path="/location" component={LocationForm} />
+      <PrivateRoute exact path="/location/:id" component={LocationForm} />
       <PrivateRoute exact path="/organization/:id" component={OrganizationForm} />
       <PrivateRoute exact path="/organization" component={OrganizationForm} />
       <PrivateRoute exact path="/settings" component={Settings} />
