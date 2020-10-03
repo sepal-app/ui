@@ -46,7 +46,7 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
       <EuiHeaderLogo
         iconType="logoKibana"
         onClick={() => history.push("/")}
-        aria-label="Got to Sepal ome page"
+        aria-label="Got to Sepal home page"
       >
         Sepal
       </EuiHeaderLogo>

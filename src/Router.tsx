@@ -4,12 +4,9 @@ import { useAuth0, withAuthenticationRequired } from "@auth0/auth0-react"
 
 import { AccessionForm } from "./AccessionForm"
 import { Home } from "./Home"
-import { Login } from "./Login"
-import { Logout } from "./Logout"
 import { OrganizationForm } from "./OrganizationForm"
 import { Search } from "./Search"
 import { Settings } from "./Settings"
-import { Signup } from "./Signup"
 import { TaxonForm } from "./TaxonForm"
 import { LocationForm } from "./LocationForm"
 import { organizations$ } from "./lib/user"
@@ -21,11 +18,13 @@ const PrivateRoute: React.FC<ComponentProps<typeof Route>> = ({
   path,
   ...args
 }) => {
-  const { isAuthenticated } = useAuth0()
+  const { isAuthenticated, loginWithRedirect } = useAuth0()
   const orgs = organizations$.value
 
   if (!isAuthenticated) {
-    return <Redirect to={{ pathname: "/login" }} />
+    console.log("Redirect to /login")
+    loginWithRedirect()
+    return null
   }
 
   if (!orgs?.length && path !== "/organization") {
@@ -57,9 +56,6 @@ const Router: React.FC = () => {
       <PrivateRoute exact path="/organization" component={OrganizationForm} />
       <PrivateRoute exact path="/settings" component={Settings} />
       <PrivateRoute exact path="/" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/signup" component={Signup} />
-      <Route path="/logout" component={Logout} />
     </Switch>
   )
 }
