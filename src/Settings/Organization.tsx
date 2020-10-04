@@ -1,7 +1,4 @@
-import React, { useState } from "react"
-import { EuiSideNav } from "@elastic/eui"
-
-import Page from "../Page"
+import React from "react"
 
 export const Organization: React.FC = () => {
   return (

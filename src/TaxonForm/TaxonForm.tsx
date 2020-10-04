@@ -2,7 +2,7 @@ import React from "react"
 import { EuiTabbedContent } from "@elastic/eui"
 import { useObservable, useObservableState } from "observable-hooks"
 import { EMPTY, Observable, iif, zip } from "rxjs"
-import { catchError, filter, mergeMap, switchMap, tap } from "rxjs/operators"
+import { catchError, filter, mergeMap, switchMap } from "rxjs/operators"
 import { useParams } from "react-router-dom"
 
 import Page from "../Page"

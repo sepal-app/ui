@@ -16,7 +16,7 @@ import _ from "lodash"
 import * as TaxonService from "../lib/taxon"
 import { Taxon, TaxonFormValues } from "../lib/taxon"
 import { currentOrganization$ } from "../lib/user"
-import { useExpiringState, useParamsObservable } from "../hooks"
+import { useExpiringState } from "../hooks"
 import { isNotEmpty } from "../lib/observables"
 
 interface Props {
@@ -31,7 +31,6 @@ interface ParentCompletion {
 
 export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
   // const [org, ,] = useCurrentOrganization();
-  const params$ = useParamsObservable<{ id: string }>()
   const [success, setSuccess] = useExpiringState(false, 1000)
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const [selectedParents, setSelectedParents] = useState<ParentCompletion[] | undefined>(
@@ -65,7 +64,7 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
     if (taxon?.parent && taxon.parent.id !== -1) {
       updateParentCompletions(taxon.parent)
     }
-  }, [taxon])
+  }, [taxon, updateParentCompletions])
 
   function handleParentChange(selectedOptions: any) {
     setSelectedParents(selectedOptions)

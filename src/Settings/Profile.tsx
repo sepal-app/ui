@@ -1,7 +1,5 @@
-import React, { useState } from "react"
-import { EuiButton, EuiButtonEmpty } from "@elastic/eui"
-
-import Page from "../Page"
+import React from "react"
+import { EuiButtonEmpty } from "@elastic/eui"
 
 export const Profile: React.FC = () => {
   return (

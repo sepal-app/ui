@@ -1,5 +1,4 @@
 import React, { useState } from "react"
-import { useLocation, useParams } from "react-router-dom"
 import {
   EuiAccordion,
   EuiListGroup,
@@ -9,14 +8,9 @@ import {
   EuiText,
 } from "@elastic/eui"
 import { useParamsValueObservable } from "./hooks/params"
-import {
-  pluckFirst,
-  useObservable,
-  useObservableGetState,
-  useObservableState,
-} from "observable-hooks"
+import { useObservable, useObservableState } from "observable-hooks"
 import { EMPTY, Observable, combineLatest } from "rxjs"
-import { catchError, map, switchMap, tap } from "rxjs/operators"
+import { catchError, switchMap, tap } from "rxjs/operators"
 
 import Page from "./Page"
 import * as taxonSvc from "./lib/taxon"

@@ -7,9 +7,6 @@ import { currentUser$, currentOrganization$ } from "./user"
 
 const baseUrl = process.env.REACT_APP_AUTH0_API_URL as string
 
-const accessTokenKey = "access_token"
-const refreshTokenKey = "refresh_token"
-
 interface SignupData {
   username: string
   email: string

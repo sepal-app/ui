@@ -1,5 +1,5 @@
-import { Observable, from, throwError } from "rxjs"
-import { map, switchMap, tap, takeLast } from "rxjs/operators"
+import { Observable, from } from "rxjs"
+import { map, switchMap, tap } from "rxjs/operators"
 import { fromFetch } from "rxjs/fetch"
 
 import { toCamelCase, toSnakeCase } from "./case"

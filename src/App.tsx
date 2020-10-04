@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react"
-import { useHistory } from "react-router-dom"
 import { EMPTY, from } from "rxjs"
 import { catchError, finalize, switchMap, tap } from "rxjs/operators"
 import { EuiLoadingSpinner } from "@elastic/eui"

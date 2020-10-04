@@ -1,44 +1,28 @@
-import React, { useEffect, useState } from "react"
-import {
-  EuiButton,
-  EuiComboBox,
-  EuiFieldText,
-  EuiForm,
-  EuiFormRow,
-  EuiTextColor,
-} from "@elastic/eui"
+import React, { useEffect } from "react"
+import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
 import { useObservable, useObservableState } from "observable-hooks"
-import { useLocation, useHistory, useParams } from "react-router-dom"
-import { EMPTY, iif, of, zip } from "rxjs"
-import { catchError, filter, map, mergeMap, switchMap, tap } from "rxjs/operators"
-import _ from "lodash"
+import { useHistory } from "react-router-dom"
+import { EMPTY, iif, zip } from "rxjs"
+import { catchError, filter, mergeMap, switchMap, tap } from "rxjs/operators"
 
 import Page from "./Page"
 import * as LocationService from "./lib/location"
 import { LocationFormValues } from "./lib/location"
 import { currentOrganization$ } from "./lib/user"
-import * as TaxonService from "./lib/taxon"
-import { Taxon } from "./lib/taxon"
 import { isNotEmpty } from "./lib/observables"
-import {
-  useExpiringState,
-  useParamsObservable,
-  useParamsValueObservable,
-  useSearchParams,
-} from "./hooks"
+import { useExpiringState, useParamsObservable, useSearchParams } from "./hooks"
 
 export const LocationForm: React.FC = () => {
   const params$ = useParamsObservable<{ id: string; success: string }>()
   const [success, setSuccess] = useExpiringState(false, 3000)
-  const browserLocation = useLocation()
   const history = useHistory()
   const searchParams = useSearchParams()
 
   useEffect(() => {
     const successParam = searchParams.has("success")
     setSuccess(successParam)
-  }, [searchParams])
+  }, [searchParams, setSuccess])
 
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const [location] = useObservableState(() =>
