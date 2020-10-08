@@ -62,7 +62,10 @@ export const OrganizationForm: React.FC = () => {
   }
 
   return (
-    <Page contentTitle={title} navbarOptions={{ hideSearch: true, hideOrgMenu: true }}>
+    <Page
+      contentTitle={title}
+      navbarOptions={{ hideAddMenu: true, hideOrgMenu: true, hideSearch: true }}
+    >
       <Formik
         enableReinitialize={true}
         onSubmit={handleSubmit}
