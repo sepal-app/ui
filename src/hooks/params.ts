@@ -5,6 +5,8 @@ import { Observable } from "rxjs"
 import { map } from "rxjs/operators"
 
 export function useSearchParams(): URLSearchParams {
+  // TODO: we can probably rmeove the useSearchParams hooks when
+  // react-router-dom is released which contains its own search params hook
   const location = useLocation()
   const [searchParams, setSearchParams] = useState(new URLSearchParams())
   useEffect(() => {

@@ -18,17 +18,16 @@ export interface Taxon {
 
 export type TaxonFormValues = Pick<Taxon, "name" | "rank" | "parentId">
 
-interface TaxonSearchResult {
-  results: Taxon[]
-}
-
-export const { get, create, update } = api.makeResource<Taxon, TaxonFormValues>(basePath)
+export const { create, get, list, update } = api.makeResource<Taxon, TaxonFormValues>(
+  basePath,
+)
 
 export const meta = (orgId: number) => {
   const path = [basePath(orgId), "meta"].join("/").concat("/")
   return api.get(path)
 }
 
+// TODO: replace with list()
 export const search = (
   orgId: string | number,
   query: string,
@@ -37,5 +36,7 @@ export const search = (
   const params = new URLSearchParams({ q: query })
   const queryParams = "?".concat(params.toString())
   const path = [basePath(orgId), queryParams].join("")
-  return api.get<TaxonSearchResult>(path).pipe(map((resp) => resp.results))
+  // return api.get<TaxonSearchResult>(path).pipe(map((resp) => resp.results))
+  // return api.get<TaxonSearchResult>(path) // .pipe(map((resp) => resp.results))
+  return api.get<Taxon[]>(path) // .pipe(map((resp) => resp.results))
 }

@@ -1,4 +1,4 @@
-import { Observable, from } from "rxjs"
+import { Observable, from, of, zip } from "rxjs"
 import { map, switchMap, tap } from "rxjs/operators"
 import { fromFetch } from "rxjs/fetch"
 
@@ -7,10 +7,59 @@ import { accessToken$, logout } from "./auth"
 
 const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
 
+const getNextLink = (headers: Headers): string | null => {
+  if (!headers.has("link")) {
+    return null
+  }
+  const match = headers.get("link")?.match(/<(.*?)>;\s*?rel=next/)
+  if (!match) {
+    return null
+  }
+  return match[1]
+}
+
+export type ListOptions = {
+  cursor?: string
+  limit?: number
+  query?: string
+}
+
+export type ListResponse<T> = Observable<[T[], ListResponse<T> | null]>
+
 export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => string) => ({
-  list: (orgId: string | number): Observable<T[]> => {
-    const path = pathTemplate(orgId).concat("/")
-    return get<T[]>(path)
+  list: (
+    orgId: string | number,
+    { cursor = undefined, limit = 50, query = undefined }: ListOptions = {},
+  ): ListResponse<T> => {
+    const params = new URLSearchParams()
+    if (cursor) {
+      params.append("cursor", cursor)
+    }
+    if (limit) {
+      params.append("limit", limit.toString())
+    }
+    if (query) {
+      params.append("q", query)
+    }
+
+    let url: string | null = [
+      baseUrl.concat(pathTemplate(orgId)),
+      params.toString(),
+    ].join("?")
+
+    const fetchPage = (path: string): ListResponse<T> =>
+      request(path, {}).pipe(
+        tap(() => console.log("requested page")),
+        switchMap((resp: Response) =>
+          zip(from(resp.json()), of(getNextLink(resp.headers))),
+        ),
+        map(([data, nextPageUrl]) => [
+          data.map((d: T) => toCamelCase<T>(d)),
+          nextPageUrl ? fetchPage(nextPageUrl) : null,
+        ]),
+      )
+
+    return fetchPage(url)
   },
 
   get: (
@@ -50,8 +99,9 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
 //   }
 // }
 
-const request = <T>(url: string, options?: RequestInit): Observable<T> =>
+const request = (url: string, options?: RequestInit): Observable<Response> =>
   fromFetch(url, {
+    method: "GET",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -71,11 +121,12 @@ const request = <T>(url: string, options?: RequestInit): Observable<T> =>
       return resp
     }),
     // TODO: make sure response is JSON
-    switchMap((resp) => from(resp.json())),
+    //switchMap((resp) => from(resp.json())),
   )
 
 export const get = <T>(path: string): Observable<T> =>
-  request<T>(baseUrl.concat(path), { method: "GET" }).pipe(
+  request(baseUrl.concat(path), { method: "GET" }).pipe(
+    switchMap((resp: Response) => from(resp.json())),
     map((data) =>
       Array.isArray(data)
         ? ((data.map((d) => toCamelCase(d)) as unknown) as T)
@@ -84,18 +135,24 @@ export const get = <T>(path: string): Observable<T> =>
   )
 
 export const post = <T, K>(path: string, data: K): Observable<T> =>
-  request<T>(baseUrl.concat(path), {
+  request(baseUrl.concat(path), {
     method: "POST",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(map((data) => toCamelCase(data)))
+  }).pipe(
+    switchMap((resp: Response) => from(resp.json())),
+    map((data) => toCamelCase(data)),
+  )
 
 export const patch = <T, K>(path: string, data: K): Observable<T> =>
-  request<T>(baseUrl.concat(path), {
+  request(baseUrl.concat(path), {
     method: "PATCH",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(map((data) => toCamelCase(data)))
+  }).pipe(
+    switchMap((resp: Response) => from(resp.json())),
+    map((data) => toCamelCase(data)),
+  )
 
 export const del = (path: string): Observable<any> =>
-  request<any>(baseUrl.concat(path), {
+  request(baseUrl.concat(path), {
     method: "DELETE",
   })

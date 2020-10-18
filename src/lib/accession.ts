@@ -21,15 +21,17 @@ interface AccessionSearchResult {
   results: Accession[]
 }
 
-export const { get, create, update } = api.makeResource<Accession, AccessionFormValues>(
-  basePath,
-)
+export const { create, get, list, update } = api.makeResource<
+  Accession,
+  AccessionFormValues
+>(basePath)
 
 export const meta = (orgId: number) => {
   const path = [basePath(orgId), "meta"].join("/").concat("/")
   return api.get(path)
 }
 
+// TODO: remove this search function in favor of the list function
 export const search = (
   orgId: string | number,
   query: string,
