@@ -75,7 +75,7 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
       params.append("include", options.include.join(","))
     }
     const queryParams = "?".concat(params.toString())
-    const path = [pathTemplate(orgId), id, queryParams].join("/")
+    const path = [pathTemplate(orgId), id].join("/").concat(queryParams)
     return get<T>(path)
   },
 

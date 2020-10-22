@@ -30,7 +30,7 @@ interface Props {
 export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }) => {
   const { logout } = useAuth0()
   const history = useHistory()
-  const [query, setQuery] = useState()
+  const [query, setQuery] = useState<string | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [, setShowOrgMenu] = useState(false)
@@ -95,7 +95,7 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
         }
       }) ?? []
 
-    console.log(`org id: ${currentOrganization?.id}`)
+    // console.log(`org id: ${currentOrganization?.id}`)
 
     return (
       <EuiSuperSelect

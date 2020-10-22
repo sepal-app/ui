@@ -4,7 +4,7 @@ export const useExpiringState = <T>(
   startValue: T,
   expirationTime: number,
 ): [T, (newValue: T) => void] => {
-  const [value, setValue] = useState()
+  const [value, setValue] = useState(startValue)
 
   const expiringSetValue = (newValue: T) => {
     setValue(newValue)

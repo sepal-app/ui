@@ -3,6 +3,7 @@ import { EuiLink, EuiText } from "@elastic/eui"
 import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
 import { combineLatest } from "rxjs"
 import { switchMap } from "rxjs/operators"
+import { useHistory } from "react-router-dom"
 
 import * as taxonSvc from "./lib/taxon"
 import { Taxon } from "./lib/taxon"
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export const TaxonSummaryBox: React.FC<Props> = ({ item }) => {
+  const history = useHistory()
   const item$ = useObservable(pluckFirst, [item])
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const taxon = useObservableState(
@@ -29,7 +31,7 @@ export const TaxonSummaryBox: React.FC<Props> = ({ item }) => {
 
   return (
     <>
-      <EuiLink href={`/taxon/${taxon.id}`}>Edit</EuiLink>
+      <EuiLink onClick={() => history.push(`/taxon/${taxon.id}`)}>Edit</EuiLink>
       <EuiText>
         <h3>{taxon.name}</h3>
         <p>{taxon.parent && taxon.parent.name}</p>
