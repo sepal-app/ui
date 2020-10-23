@@ -8,31 +8,19 @@ import {
   EuiTextColor,
 } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import {
-  useObservable,
-  useObservableEagerState,
-  useObservableState,
-} from "observable-hooks"
-import { Observable, iif, of } from "rxjs"
-import { finalize, map, mergeMap, switchMap, tap } from "rxjs/operators"
+import { Observable } from "rxjs"
+import { finalize, tap } from "rxjs/operators"
 import _ from "lodash"
 
-import * as TaxonService from "../lib/taxon"
 import { Taxon, TaxonFormValues } from "../lib/taxon"
-import { currentOrganization$ } from "../lib/user"
 import { useExpiringState } from "../hooks"
-import { isNotEmpty } from "../lib/observables"
 import { GeneralTabSchema } from "./formSchemas"
 import { Rank, RankOption } from "./types"
+import { ParentField } from "./ParentField"
 
 interface Props {
   taxon: Taxon
   onSubmit: (values: TaxonFormValues) => Observable<Taxon>
-}
-
-interface ParentCompletion {
-  label: string
-  value: Taxon
 }
 
 const rankOptions: RankOption[] = [
@@ -52,12 +40,6 @@ const rankOptions: RankOption[] = [
 
 export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
   const [success, setSuccess] = useExpiringState(false, 1000)
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
-  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
-  const [
-    selectedParentCompletion,
-    setSelectedParentCompletion,
-  ] = useState<ParentCompletion | null>(null)
   const [selectedRankOption, setSelectedRankOption] = useState<RankOption | null>(
     () => rankOptions.find((o) => o.value === taxon.rank) ?? null,
   )
@@ -67,59 +49,10 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
     setSelectedRankOption(rankOption)
   }, [taxon])
 
-  useEffect(() => {
-    if (!taxon?.parentId) {
-      setSelectedParentCompletion(null)
-    }
-
-    // get the parent data
-    const subscription = TaxonService.get(org.id, taxon.parentId as number)
-      .pipe(
-        tap((parentTaxon) =>
-          setSelectedParentCompletion({ label: parentTaxon.name, value: parentTaxon }),
-        ),
-      )
-      .subscribe()
-
-    return () => subscription.unsubscribe()
-  }, [org.id, taxon.parentId])
-
-  const [parentCompletions, updateParentCompletions] = useObservableState<
-    ParentCompletion[],
-    Taxon | string
-  >(
-    (input$) =>
-      input$.pipe(
-        mergeMap((input) =>
-          iif(
-            () => _.isString(input),
-            // if the input is a string then search for completions
-            org$.pipe(
-              switchMap((org) => TaxonService.list(org.id, { query: input as string })),
-              map(([taxa]) => taxa.map((taxon) => ({ label: taxon.name, value: taxon }))),
-            ),
-            // if the input is not a string then assume it's a taxon and set it
-            // as the only completion
-            of([{ label: input, value: input } as ParentCompletion]).pipe(
-              tap((completions) => setSelectedParentCompletion(completions[0])),
-            ),
-          ),
-        ),
-      ),
-    () => [],
-  )
-
-  useEffect(() => {
-    if (taxon?.parent && taxon.parent.id !== -1) {
-      updateParentCompletions(taxon.parent)
-    }
-  }, [taxon, updateParentCompletions])
-
   function handleSubmit(
     values: TaxonFormValues,
     { setSubmitting }: FormikHelpers<Taxon>,
   ) {
-    values.parentId = selectedParentCompletion ? selectedParentCompletion.value.id : null
     onSubmit(values)
       .pipe(
         tap(() => setSuccess(true)),
@@ -148,22 +81,11 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
               />
             </EuiFormRow>
             <EuiFormRow label="Parent">
-              <EuiComboBox<Taxon>
-                async
-                placeholder="Search for a taxon"
-                singleSelection={{ asPlainText: true }}
-                options={parentCompletions}
-                selectedOptions={
-                  selectedParentCompletion ? [selectedParentCompletion] : []
-                }
-                onChange={(completions) => {
-                  const completion = completions?.[0]
-                  handleChange("parentId")(
-                    completion?.value ? completion.value.id.toString() : "",
-                  )
-                  setSelectedParentCompletion(completion as ParentCompletion)
+              <ParentField
+                value={values.parentId}
+                onChange={(taxon) => {
+                  handleChange("parentId")(taxon?.id.toString() ?? "")
                 }}
-                onSearchChange={(value) => value && updateParentCompletions(value)}
               />
             </EuiFormRow>
             <EuiFormRow label="Rank">
