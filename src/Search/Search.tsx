@@ -25,7 +25,6 @@ const useSearchObservableState = <T,>(orgId: number, searchFunc: SearchFunc<T>) 
     let nextPage$: ListResponse<T> | null = null
     let data: T[] = initialState
     return input$.pipe(
-      tap((q) => console.log(`q: ${q}`)),
       switchMap((q) =>
         iif(
           () => !nextPage$,
@@ -41,9 +40,11 @@ const useSearchObservableState = <T,>(orgId: number, searchFunc: SearchFunc<T>) 
     )
   }, [])
 
+type SearchResultItem = Accession | Taxon
+
 export const Search: React.FC = () => {
-  const [selected, setSelected] = useState()
-  const [selectedType, setSelectedType] = useState()
+  const [selected, setSelected] = useState<SearchResultItem | null>(null)
+  const [selectedType, setSelectedType] = useState<string | null>(null)
   const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
   const searchParams = useSearchParams()
 
@@ -64,7 +65,7 @@ export const Search: React.FC = () => {
   }, [q])
 
   function renderSearchResults() {
-    function handleClick(item: Taxon | Accession, type: string) {
+    function handleClick(item: SearchResultItem, type: string) {
       setSelected(item)
       setSelectedType(type)
     }
@@ -110,9 +111,9 @@ export const Search: React.FC = () => {
   function renderSelected() {
     switch (selectedType) {
       case "taxon":
-        return <TaxonSummaryBox item={selected} />
+        return <TaxonSummaryBox item={selected as Taxon} />
       case "accession":
-        return <AccessionSummaryBox item={selected} />
+        return <AccessionSummaryBox item={selected as Accession} />
       default:
         return <></>
     }

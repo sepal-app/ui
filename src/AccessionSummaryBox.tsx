@@ -1,10 +1,11 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { EuiLink, EuiText } from "@elastic/eui"
-import { pluckFirst, useObservable, useObservableState } from "observable-hooks"
+import { useObservableEagerState } from "observable-hooks"
 import { combineLatest } from "rxjs"
-import { switchMap } from "rxjs/operators"
+import { switchMap, tap } from "rxjs/operators"
+import { useHistory } from "react-router-dom"
 
-import * as accessionSvc from "./lib/accession"
+import * as AccessionService from "./lib/accession"
 import { Accession } from "./lib/accession"
 import { currentOrganization$ } from "./lib/user"
 import { isNotEmpty } from "./lib/observables"
@@ -14,22 +15,22 @@ interface Props {
 }
 
 export const AccessionSummaryBox: React.FC<Props> = ({ item }) => {
-  const item$ = useObservable(pluckFirst, [item])
-  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
-  const accession = useObservableState(
-    combineLatest(item$, org$).pipe(
-      switchMap(([{ id }, org]) =>
-        accessionSvc.get(org.id, id, {
-          expand: ["taxon"],
-        }),
-      ),
-    ),
-    item,
-  )
+  const history = useHistory()
+  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
+  const [accession, setAccession] = useState(item)
+
+  useEffect(() => {
+    if (!item || !org) {
+      return
+    }
+
+    // get full accession details
+    AccessionService.get(org.id, item.id).toPromise().then(setAccession)
+  }, [item, org])
 
   return (
     <>
-      <EuiLink href={`/accession/${accession?.id}`}>Edit</EuiLink>
+      <EuiLink onClick={() => history.push(`/accession/${accession.id}`)}>Edit</EuiLink>
       <EuiText>
         <h3>{accession?.code}</h3>
         <p>{accession?.taxon?.name && accession.taxon.name}</p>
