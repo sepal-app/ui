@@ -5,12 +5,12 @@ import { useObservable, useObservableState } from "observable-hooks"
 import { map, mergeMap, tap, withLatestFrom } from "rxjs/operators"
 import _ from "lodash"
 
-import { isNotEmpty } from "../lib/observables"
-import * as TaxonService from "../lib/taxon"
-import { Taxon } from "../lib/taxon"
-import { currentOrganization$ } from "../lib/user"
+import { isNotEmpty } from "./lib/observables"
+import * as TaxonService from "./lib/taxon"
+import { Taxon } from "./lib/taxon"
+import { currentOrganization$ } from "./lib/user"
 
-interface ParentCompletion {
+interface Completion {
   label: string
   value: Taxon
 }
@@ -20,11 +20,11 @@ interface Props {
   onChange: (taxon: Taxon | null) => void
 }
 
-export const ParentField: React.FC<Props> = ({ onChange, value, ...props }) => {
-  const [selectedOption, setSelectedOption] = useState<ParentCompletion | null>(null)
+export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
+  const [selectedOption, setSelectedOption] = useState<Completion | null>(null)
   const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
-  const [parentCompletions, updateParentCompletions] = useObservableState<
-    ParentCompletion[],
+  const [completions, updateCompletions] = useObservableState<
+    Completion[],
     Taxon | string
   >(
     (input$) =>
@@ -39,7 +39,7 @@ export const ParentField: React.FC<Props> = ({ onChange, value, ...props }) => {
             ),
             // if the input is not a string then assume it's a taxon and set it
             // as the only completion
-            of([{ label: input, value: input } as ParentCompletion]).pipe(
+            of([{ label: input, value: input } as Completion]).pipe(
               tap((completions) => {
                 setSelectedOption(completions[0])
                 onChange(completions[0].value)
@@ -52,7 +52,7 @@ export const ParentField: React.FC<Props> = ({ onChange, value, ...props }) => {
   )
 
   useEffect(() => {
-    if (!value) {
+    if (!value || value < 0) {
       return
     }
 
@@ -71,14 +71,14 @@ export const ParentField: React.FC<Props> = ({ onChange, value, ...props }) => {
       async
       placeholder="Search for a taxon"
       singleSelection={{ asPlainText: true }}
-      options={parentCompletions}
+      options={completions}
       selectedOptions={selectedOption ? [selectedOption] : []}
       onChange={(completions) => {
-        const completion = completions?.[0] as ParentCompletion
-        setSelectedOption(completion as ParentCompletion)
+        const completion = completions?.[0] as Completion
+        setSelectedOption(completion as Completion)
         onChange(completions?.[0]?.value ?? null)
       }}
-      onSearchChange={(value) => value && updateParentCompletions(value)}
+      onSearchChange={(value) => value && updateCompletions(value)}
       {...props}
     />
   )

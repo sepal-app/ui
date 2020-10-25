@@ -16,10 +16,10 @@ import { Taxon, TaxonFormValues } from "../lib/taxon"
 import { useExpiringState } from "../hooks"
 import { GeneralTabSchema } from "./formSchemas"
 import { Rank, RankOption } from "./types"
-import { ParentField } from "./ParentField"
+import { TaxonField } from "../TaxonField"
 
 interface Props {
-  taxon: Taxon
+  taxon: Taxon | null
   onSubmit: (values: TaxonFormValues) => Observable<Taxon>
 }
 
@@ -41,17 +41,20 @@ const rankOptions: RankOption[] = [
 export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
   const [success, setSuccess] = useExpiringState(false, 1000)
   const [selectedRankOption, setSelectedRankOption] = useState<RankOption | null>(
-    () => rankOptions.find((o) => o.value === taxon.rank) ?? null,
+    () => rankOptions.find((o) => o.value === taxon?.rank) ?? null,
   )
 
   useEffect(() => {
+    if (!taxon) {
+      return
+    }
     const rankOption = rankOptions.find((o) => o.value === taxon.rank) ?? null
     setSelectedRankOption(rankOption)
   }, [taxon])
 
   function handleSubmit(
     values: TaxonFormValues,
-    { setSubmitting }: FormikHelpers<Taxon>,
+    { setSubmitting }: FormikHelpers<TaxonFormValues>,
   ) {
     onSubmit(values)
       .pipe(
@@ -64,9 +67,16 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
   }
 
   return (
-    <Formik
+    <Formik<TaxonFormValues>
       enableReinitialize={true}
-      initialValues={taxon}
+      initialValues={
+        taxon ?? {
+          // id: -1,
+          name: "",
+          rank: "",
+          parentId: -1,
+        }
+      }
       onSubmit={handleSubmit}
       validationSchema={GeneralTabSchema}
     >
@@ -81,7 +91,7 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
               />
             </EuiFormRow>
             <EuiFormRow label="Parent">
-              <ParentField
+              <TaxonField
                 value={values.parentId}
                 onChange={(taxon) => {
                   handleChange("parentId")(taxon?.id.toString() ?? "")

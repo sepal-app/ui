@@ -1,69 +1,50 @@
-import React from "react"
-import { useHistory } from "react-router-dom"
+import React, { useState, useEffect } from "react"
+import { useHistory, useParams } from "react-router-dom"
 import { EuiTabbedContent } from "@elastic/eui"
-import {
-  useObservable,
-  useObservableEagerState,
-  useObservableState,
-} from "observable-hooks"
-import { EMPTY, Observable, iif, zip } from "rxjs"
-import { catchError, filter, mergeMap, switchMap, take, tap } from "rxjs/operators"
+import { useObservableEagerState } from "observable-hooks"
+import { Observable } from "rxjs"
+import { map, tap } from "rxjs/operators"
 
 import Page from "../Page"
 import * as TaxonService from "../lib/taxon"
 import { Taxon, TaxonFormValues } from "../lib/taxon"
 import { currentOrganization$ } from "../lib/user"
-import { useParamsObservable } from "../hooks"
+import {
+  useParamsObservable,
+  useParamsValueObservableState,
+  useSearchParams,
+} from "../hooks"
 import { isNotEmpty } from "../lib/observables"
-
 import { GeneralTab } from "./GeneralTab"
 
 export const TaxonForm: React.FC = () => {
-  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
   const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
-  const params$ = useParamsObservable<{ id: string }>()
+  const params = useParams<{ id: string }>()
   const history = useHistory()
+  const [taxon, setTaxon] = useState<Taxon>({
+    id: -1,
+    name: "",
+    rank: "",
+    parentId: -1,
+  })
 
-  const [taxon] = useObservableState(
-    () =>
-      zip(params$, org$).pipe(
-        filter(([{ id }]) => !!id),
-        switchMap(([{ id }, { id: orgId }]) =>
-          TaxonService.get(orgId, id, {
-            expand: ["parent"],
-          }),
-        ),
-        // tap(taxon => updateParentCompletions(taxon.parent)),
-      ),
-    {
-      id: -1,
-      name: "",
-      rank: "",
-      parent: { id: -1, name: "" },
-    } as Taxon,
-  )
+  useEffect(() => {
+    if (!params.id) {
+      return
+    }
+
+    TaxonService.get(org.id, params.id).toPromise().then(setTaxon)
+  }, [org, params.id])
 
   function onSubmit(values: TaxonFormValues): Observable<Taxon> {
-    return params$.pipe(
-      switchMap(({ id }) =>
-        iif(
-          () => !id,
-          TaxonService.create(org.id, values).pipe(
-            tap(({ id }) => {
-              history.push(`/taxon/${id}`)
-              history.goForward()
-            }),
-          ),
-          TaxonService.update(org.id, id, values),
-        ),
-      ),
-      take(1),
-      catchError((err) => {
-        // this.notificationSvc.error("Search failed.");
-        console.log(err)
-        return EMPTY
-      }),
-    )
+    return taxon.id < 0
+      ? TaxonService.create(org.id, values).pipe(
+          tap(({ id }) => {
+            history.push(`/taxon/${id}`)
+            history.goForward()
+          }),
+        )
+      : TaxonService.update(org.id, taxon.id, values)
   }
 
   const tabs = [
@@ -77,7 +58,7 @@ export const TaxonForm: React.FC = () => {
 
   // TODO: don't allow changing tabs unless the form is saved
   return (
-    <Page contentTitle="Taxon form">
+    <Page contentTitle={taxon.id ? taxon.name : "New taxon"}>
       <EuiTabbedContent tabs={tabs} />
     </Page>
   )

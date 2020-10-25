@@ -80,12 +80,12 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
   },
 
   create: (orgId: string | number, data: F): Observable<T> => {
-    const path = pathTemplate(orgId).concat("/")
+    const path = pathTemplate(orgId)
     return post<T, F>(path, data)
   },
 
   update: (orgId: string | number, id: string | number, data: F): Observable<T> => {
-    const path = [pathTemplate(orgId), id].join("/").concat("/")
+    const path = [pathTemplate(orgId), id].join("/")
     return patch<T, F>(path, data)
   },
 })
