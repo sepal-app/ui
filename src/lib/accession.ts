@@ -1,5 +1,3 @@
-import { Observable } from "rxjs"
-import { map } from "rxjs/operators"
 import * as api from "./api"
 import { Taxon } from "./taxon"
 
@@ -16,10 +14,6 @@ export interface Accession {
 }
 
 export type AccessionFormValues = Pick<Accession, "code" | "taxonId">
-
-interface AccessionSearchResult {
-  results: Accession[]
-}
 
 export const { create, get, list, update } = api.makeResource<
   Accession,

@@ -1,6 +1,3 @@
-import { Observable } from "rxjs"
-import { map } from "rxjs/operators"
-
 import * as api from "./api"
 
 function basePath(orgId: string | number) {
