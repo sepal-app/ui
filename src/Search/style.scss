@@ -1,0 +1,10 @@
+@import "~@elastic/eui/src/theme_light.scss";
+
+.Search--ListItem {
+  cursor: pointer;
+  padding-top: $euiSizeM;
+  padding-left: $euiSizeL;
+  &:hover {
+    background-color: $euiColorLightestShade;
+  }
+}

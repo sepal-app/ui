@@ -76,7 +76,8 @@ export const Search: React.FC = () => {
     q,
   )
   const [accessions, fetchNextAccessionsPage] = useSearchObservableState(
-    (q: string) => AccessionService.list(org.id, { limit: pageSize, query: q }),
+    (q: string) =>
+      AccessionService.list(org.id, { limit: pageSize, query: q, include: ["taxon"] }),
     q,
   )
 
@@ -89,6 +90,7 @@ export const Search: React.FC = () => {
       return (
         <ListItem
           title={accession.code}
+          subtitle={accession.taxon?.name ?? ""}
           key={accession.id}
           onClick={() => handleClick(accession, "accession")}
           isActive={selected === accession}

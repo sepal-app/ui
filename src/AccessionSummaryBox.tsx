@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react"
-import { EuiLink, EuiText } from "@elastic/eui"
+import { EuiButtonEmpty, EuiFlexGroup, EuiFlexItem, EuiText } from "@elastic/eui"
 import { useObservableEagerState } from "observable-hooks"
-import { combineLatest } from "rxjs"
-import { switchMap, tap } from "rxjs/operators"
 import { useHistory } from "react-router-dom"
 
 import * as AccessionService from "./lib/accession"
@@ -25,15 +23,35 @@ export const AccessionSummaryBox: React.FC<Props> = ({ item }) => {
     }
 
     // get full accession details
-    AccessionService.get(org.id, item.id).toPromise().then(setAccession)
+    AccessionService.get(org.id, item.id, { include: ["taxon"] })
+      .toPromise()
+      .then(setAccession)
   }, [item, org])
 
   return (
     <>
-      <EuiLink onClick={() => history.push(`/accession/${accession.id}`)}>Edit</EuiLink>
       <EuiText>
-        <h3>{accession?.code}</h3>
-        <p>{accession?.taxon?.name && accession.taxon.name}</p>
+        <EuiFlexGroup direction="row">
+          <EuiFlexItem>
+            <h3>{accession?.code}</h3>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty
+              size="xs"
+              onClick={() => history.push(`/accession/${accession.id}`)}
+            >
+              Edit
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+        <EuiFlexGroup direction="column">
+          <EuiFlexItem>
+            <dl>
+              <dt>Taxon</dt>
+              <dd>{accession?.taxon && accession.taxon.name}</dd>
+            </dl>
+          </EuiFlexItem>
+        </EuiFlexGroup>
       </EuiText>
     </>
   )
