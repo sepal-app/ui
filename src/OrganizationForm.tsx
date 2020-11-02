@@ -1,64 +1,70 @@
+import omit from "lodash/omit"
 import React from "react"
+import { useMutation, useQuery } from "react-query"
+import { useHistory, useParams } from "react-router-dom"
 import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import { useObservableState } from "observable-hooks"
-import { EMPTY, iif } from "rxjs"
-import { catchError, filter, map, mergeMap, switchMap, tap } from "rxjs/operators"
 
 import Page from "./Page"
-import { currentOrganization$, organizations$ } from "./lib/user"
-import * as OrganizationService from "./lib/organization"
-import { OrganizationFormValues } from "./lib/organization"
-import { useExpiringState, useParamsObservable } from "./hooks"
+import {
+  Organization,
+  OrganizationFormValues,
+  create,
+  currentOrganization$,
+  get as getOrganization,
+  update,
+} from "./lib/organization"
+import { useExpiringState, useSearchParams } from "./hooks"
 
 export const OrganizationForm: React.FC = () => {
-  console.log("OrganizationForm()")
-  const params$ = useParamsObservable<{ id: string }>()
+  const params = useParams<{ id: string }>()
   const [success, setSuccess] = useExpiringState(false, 1000)
-  const title = useObservableState(
-    params$.pipe(map(({ id }) => (id ? "Edit organization" : "Create an organization"))),
+  const searchParams = useSearchParams()
+  // const id = searchParams.get("id")
+  const title = params.id ? "Edit organization" : "Create an organization"
+
+  const { data: organization } = useQuery(["organization", params.id], getOrganization, {
+    enabled: params.id,
+    initialData: {
+      id: -1,
+      name: "",
+      shortName: "",
+      abbreviation: "",
+    },
+    initialStale: true,
+  })
+  const [createOrganization] = useMutation((values: OrganizationFormValues) =>
+    create(values),
   )
-  const organization = useObservableState(
-    params$.pipe(
-      filter(({ id }) => !!id),
-      switchMap(({ id }) =>
-        OrganizationService.get(id, {
-          expand: ["users"],
-        }),
-      ),
-    ),
+  const [updateOrganization] = useMutation((values: OrganizationFormValues) =>
+    update(organization?.id ?? -1, values),
   )
 
-  function handleSubmit(
+  const handleSubmit = async (
     values: OrganizationFormValues,
     { setSubmitting }: FormikHelpers<OrganizationFormValues>,
-  ) {
-    params$
-      .pipe(
-        mergeMap(({ id }) =>
-          iif(
-            () => !id,
-            OrganizationService.create(values).pipe(
-              map((org) => {
-                // set as current org and update list of user's organizations
-                currentOrganization$.next(org)
-                const orgs = [...organizations$.value, org]
-                organizations$.next(orgs)
-                // TODO: if has a redirect param then follow
-              }),
-            ),
-            OrganizationService.update(id, values),
-          ),
-        ),
-        catchError((err) => {
-          // this.notificationSvc.error("Search failed.");
-          console.log(err)
-          return EMPTY
-        }),
-        tap(() => setSubmitting(false)),
-        tap(() => setSuccess(true)),
-      )
-      .subscribe()
+  ) => {
+    const save = params.id
+      ? updateOrganization(values)
+      : createOrganization(values).then((org) => {
+          currentOrganization$.next(org as Organization)
+          // TODO: if has a redirect param then follow
+          // if (acc?.id) {
+          //   history.push(`/organization/${acc.id}`)
+          //   history.goForward()
+          // }
+          // return acc
+          return org
+        })
+
+    try {
+      await save
+      setSuccess(true)
+    } catch (e) {
+      console.log(e)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -66,10 +72,10 @@ export const OrganizationForm: React.FC = () => {
       contentTitle={title}
       navbarOptions={{ hideAddMenu: true, hideOrgMenu: true, hideSearch: true }}
     >
-      <Formik
+      <Formik<OrganizationFormValues>
         enableReinitialize={true}
         onSubmit={handleSubmit}
-        initialValues={organization ?? { name: "", shortName: "", abbreviation: "" }}
+        initialValues={omit(organization, ["id"]) as Organization}
       >
         {({ values, handleChange }) => (
           <Form>

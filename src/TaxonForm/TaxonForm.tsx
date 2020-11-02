@@ -3,15 +3,10 @@ import { useMutation, useQuery, useQueryCache } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
 import { EuiTabbedContent } from "@elastic/eui"
 import { useObservableEagerState } from "observable-hooks"
-import { Observable } from "rxjs"
-import { map, tap } from "rxjs/operators"
 
 import Page from "../Page"
-import * as TaxonService from "../lib/taxon"
 import { Taxon, TaxonFormValues, create, get as getTaxon, update } from "../lib/taxon"
 import { currentOrganization$ } from "../lib/organization"
-import { useSearchParams } from "../hooks"
-import { useExpiringState } from "../hooks"
 import { isNotEmpty } from "../lib/observables"
 import { GeneralTab } from "./GeneralTab"
 
@@ -20,7 +15,6 @@ export const TaxonForm: React.FC = () => {
   const queryCache = useQueryCache()
   const params = useParams<{ id: string }>()
   const history = useHistory()
-  const [success, setSuccess] = useExpiringState(false, 1000)
   const { data: taxon } = useQuery(["taxon", org.id, params.id], getTaxon, {
     enabled: org.id && params.id,
     initialData: {
@@ -54,7 +48,6 @@ export const TaxonForm: React.FC = () => {
     const txn = await save
     if (txn) {
       queryCache.setQueryData(["taxon", org.id, txn.id], txn)
-      setSuccess(true)
     }
 
     return txn as Taxon
