@@ -1,29 +1,23 @@
-import React, { useEffect, useState } from "react"
+import omit from "lodash/omit"
+import React from "react"
+import { useMutation, useQuery } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
-import {
-  EuiButton,
-  EuiComboBox,
-  EuiFieldText,
-  EuiForm,
-  EuiFormRow,
-  EuiTextColor,
-} from "@elastic/eui"
+import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import {
-  useObservable,
-  useObservableState,
-  useObservableEagerState,
-} from "observable-hooks"
-import { EMPTY, iif, of, zip } from "rxjs"
-import { catchError, filter, map, mergeMap, switchMap, take, tap } from "rxjs/operators"
+import { useObservableEagerState } from "observable-hooks"
+import { isNotEmpty } from "./lib/observables"
 import _ from "lodash"
 
 import Page from "./Page"
-import * as AccessionService from "./lib/accession"
-import { Accession, AccessionFormValues } from "./lib/accession"
-import { currentOrganization$ } from "./lib/user"
-import { isNotEmpty } from "./lib/observables"
-import { useExpiringState, useParamsObservable } from "./hooks"
+import {
+  Accession,
+  AccessionFormValues,
+  create,
+  get as getAccession,
+  update,
+} from "./lib/accession"
+import { currentOrganization$ } from "./lib/organization"
+import { useExpiringState } from "./hooks"
 import { TaxonField } from "./TaxonField"
 
 export const AccessionForm: React.FC = () => {
@@ -31,40 +25,44 @@ export const AccessionForm: React.FC = () => {
   const params = useParams<{ id: string }>()
   const history = useHistory()
   const [success, setSuccess] = useExpiringState(false, 1000)
-  const [accession, setAccession] = useState<Accession>({
-    id: -1,
-    code: "",
-    taxonId: -1,
+  const { data: accession } = useQuery(["accession", org?.id, params.id], getAccession, {
+    enabled: org.id && params.id,
+    initialData: {
+      id: -1,
+      code: "",
+      taxonId: -1,
+    },
+    initialStale: true,
   })
+  const [createAccession] = useMutation((values: AccessionFormValues) =>
+    create(org?.id ?? "", values),
+  )
+  const [updateAccession] = useMutation((values: AccessionFormValues) =>
+    update(org?.id ?? "", accession?.id ?? "", values),
+  )
 
-  useEffect(() => {
-    if (!params.id) {
-      return
-    }
-
-    AccessionService.get(org.id, params.id).toPromise().then(setAccession)
-  }, [org, params.id])
-
-  function handleSubmit(
+  const handleSubmit = async (
     values: AccessionFormValues,
     { setSubmitting }: FormikHelpers<AccessionFormValues>,
-  ) {
-    const save$ =
-      accession.id < 0
-        ? AccessionService.create(org.id, values).pipe(
-            tap(({ id }) => {
-              history.push(`/accession/${id}`)
-              history.goForward()
-            }),
-          )
-        : AccessionService.update(org.id, accession.id, values)
+  ) => {
+    const save = params.id
+      ? updateAccession(values)
+      : createAccession(values).then((acc) => {
+          if (acc?.id) {
+            history.push(`/accession/${acc.id}`)
+            history.goForward()
+          }
+          return acc
+        })
 
-    save$
-      .toPromise()
-      .then((r) => {
-        console.log(r)
-      })
-      .catch((e) => console.log(e))
+    try {
+      await save
+      setSuccess(true)
+    } catch (e) {
+      console.log(e)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -72,14 +70,7 @@ export const AccessionForm: React.FC = () => {
       <Formik<AccessionFormValues>
         enableReinitialize={true}
         onSubmit={handleSubmit}
-        initialValues={
-          accession ??
-          ({
-            // id: -1,
-            code: "",
-            taxonId: -1,
-          } as AccessionFormValues)
-        }
+        initialValues={omit(accession, ["id"]) as Accession}
       >
         {({ values, handleChange }) => (
           <Form>

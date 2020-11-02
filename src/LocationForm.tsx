@@ -1,75 +1,83 @@
+import omit from "lodash/omit"
 import React, { useEffect } from "react"
+import { useMutation, useQuery } from "react-query"
 import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import { useObservable, useObservableState } from "observable-hooks"
-import { useHistory } from "react-router-dom"
-import { EMPTY, iif, zip } from "rxjs"
-import { catchError, filter, mergeMap, switchMap, tap } from "rxjs/operators"
+import { useObservableEagerState } from "observable-hooks"
+import { useHistory, useParams } from "react-router-dom"
 
 import Page from "./Page"
-import * as LocationService from "./lib/location"
-import { LocationFormValues } from "./lib/location"
-import { currentOrganization$ } from "./lib/user"
+import {
+  Location,
+  LocationFormValues,
+  create,
+  get as getLocation,
+  update,
+} from "./lib/location"
+import { currentOrganization$ } from "./lib/organization"
 import { isNotEmpty } from "./lib/observables"
-import { useExpiringState, useParamsObservable, useSearchParams } from "./hooks"
+import { useExpiringState } from "./hooks"
 
 export const LocationForm: React.FC = () => {
-  const params$ = useParamsObservable<{ id: string; success: string }>()
+  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
   const [success, setSuccess] = useExpiringState(false, 3000)
   const history = useHistory()
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const successParam = searchParams.has("success")
-    setSuccess(successParam)
-  }, [searchParams, setSuccess])
-
-  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
-  const [location] = useObservableState(() =>
-    zip(params$, org$).pipe(
-      filter(([{ id }]) => !!id),
-      switchMap(([{ id }, org]) => LocationService.get(org.id, id, {})),
-    ),
+  const params = useParams<{ id: string }>()
+  const { data: location } = useQuery(["location", org?.id, params.id], getLocation, {
+    enabled: org.id && params.id,
+    initialData: {
+      id: -1,
+      name: "",
+      code: "",
+      description: "",
+    },
+    initialStale: true,
+  })
+  const [createLocation] = useMutation((values: LocationFormValues) =>
+    create(org?.id ?? "", values),
+  )
+  const [updateLocation] = useMutation((values: LocationFormValues) =>
+    update(org?.id ?? "", location?.id ?? "", values),
   )
 
-  function handleSubmit(
+  // useEffect(() => {
+  //   const successParam = searchParams.has("success")
+  //   setSuccess(successParam)
+  // }, [searchParams, setSuccess])
+  //
+
+  const handleSubmit = async (
     values: LocationFormValues,
     { setSubmitting }: FormikHelpers<LocationFormValues>,
-  ) {
-    zip(params$, org$)
-      .pipe(
-        mergeMap(([{ id }, org]) =>
-          iif(
-            () => !id,
-            LocationService.create(org.id, values),
-            LocationService.update(org.id, id, values),
-          ),
-        ),
-        catchError((err) => {
-          // this.notificationSvc.error("Search failed.");
-          console.log(err)
-          return EMPTY
-        }),
-        tap(({ id }) => {
-          if (id) {
-            history.push(`/location/${id}?success=true`)
-          } else {
-            setSubmitting(false)
-            setSuccess(true)
+  ) => {
+    const save = params.id
+      ? updateLocation(values)
+      : createLocation(values).then((loc) => {
+          if (loc?.id) {
+            history.push(`/location/${loc.id}`)
+            history.goForward()
           }
-        }),
-      )
-      .subscribe()
+          return loc
+        })
+
+    try {
+      await save
+      setSuccess(true)
+    } catch (e) {
+      console.log(e)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <Page
       contentTitle={location?.name ? `Location - ${location.name}` : "Create a location"}
     >
-      <Formik
+      <Formik<LocationFormValues>
         enableReinitialize={true}
         onSubmit={handleSubmit}
-        initialValues={location ?? { code: "", name: "", description: "" }}
+        initialValues={omit(location, ["id"]) as Location}
       >
         {({ values, handleChange }) => (
           <Form>

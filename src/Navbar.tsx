@@ -1,4 +1,5 @@
 import React, { useState, KeyboardEvent } from "react"
+import { useQueryCache } from "react-query"
 import { useHistory } from "react-router-dom"
 import {
   EuiContextMenuPanel,
@@ -15,11 +16,15 @@ import {
   EuiSuperSelect,
   EuiText,
 } from "@elastic/eui"
-import { useObservableState } from "observable-hooks"
+import { useObservableEagerState } from "observable-hooks"
 import { useAuth0 } from "@auth0/auth0-react"
+import { isNotEmpty } from "./lib/observables"
 
-import { currentOrganization$, organizations$ } from "./lib/user"
-import { Organization } from "./lib/organization"
+import {
+  Organization,
+  currentOrganization$,
+  // list as listOrganizations,
+} from "./lib/organization"
 
 interface Props {
   hideAddMenu?: boolean
@@ -34,12 +39,16 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [, setShowOrgMenu] = useState(false)
-  const organizations = useObservableState(organizations$)
-  const currentOrganization = useObservableState(currentOrganization$)
 
-  if (!currentOrganization && organizations?.length) {
-    currentOrganization$.next(organizations[0])
-  }
+  // TODO: should we just get these straight from the query cache instead of
+  // doing a separate query here?
+  const queryCache = useQueryCache()
+  // const { data: organizations } = useQuery("organizations", listOrganizations)
+  const organizations = queryCache.getQueryData<Organization[]>("organizations")
+
+  const currentOrganization = useObservableEagerState(
+    currentOrganization$.pipe(isNotEmpty()),
+  )
 
   function renderLogo() {
     return (
@@ -80,11 +89,9 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   }
 
   function renderOrgMenu() {
-    // let selected = currentOrganization?.id.toString()
     function onChange(value: number) {
       const org = organizations?.find((org) => org.id === value)
       currentOrganization$.next(org as Organization)
-      // selected = org?.id?.toString() ?? ""
     }
 
     const options =

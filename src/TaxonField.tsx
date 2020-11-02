@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
+import { useQuery } from "react-query"
 import { EuiComboBox } from "@elastic/eui"
-import { iif, of } from "rxjs"
-import { useObservable, useObservableState } from "observable-hooks"
-import { map, mergeMap, tap, withLatestFrom } from "rxjs/operators"
+import { useObservableEagerState } from "observable-hooks"
 import _ from "lodash"
 
+import { ListOptions } from "./lib/api"
 import { isNotEmpty } from "./lib/observables"
-import * as TaxonService from "./lib/taxon"
-import { Taxon } from "./lib/taxon"
-import { currentOrganization$ } from "./lib/user"
+import { Taxon, get as getTaxa, list as listTaxa } from "./lib/taxon"
+import { currentOrganization$ } from "./lib/organization"
 
 interface Completion {
   label: string
@@ -22,49 +21,26 @@ interface Props {
 
 export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
   const [selectedOption, setSelectedOption] = useState<Completion | null>(null)
-  const org$ = useObservable(() => currentOrganization$.pipe(isNotEmpty()))
-  const [completions, updateCompletions] = useObservableState<
-    Completion[],
-    Taxon | string
-  >(
-    (input$) =>
-      input$.pipe(
-        withLatestFrom(org$),
-        mergeMap(([input, org]) =>
-          iif(
-            () => _.isString(input),
-            // if the input is a string then search for completions
-            TaxonService.list(org.id, { query: input as string }).pipe(
-              map(([taxa]) => taxa.map((taxon) => ({ label: taxon.name, value: taxon }))),
-            ),
-            // if the input is not a string then assume it's a taxon and set it
-            // as the only completion
-            of([{ label: input, value: input } as Completion]).pipe(
-              tap((completions) => {
-                setSelectedOption(completions[0])
-                onChange(completions[0].value)
-              }),
-            ),
-          ),
-        ),
-      ),
-    () => [],
+  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
+  const [query, setQuery] = useState<string | null>()
+  const { data: completions } = useQuery(
+    ["taxa", org.id, { query }],
+    async (orgId: number, options: ListOptions) => {
+      const taxa = await listTaxa(orgId, options)
+      return taxa.map((taxon) => ({ label: taxon.name, value: taxon }))
+    },
+    {
+      enabled: query,
+    },
   )
 
-  useEffect(() => {
-    if (!value || value < 0) {
-      return
-    }
-
-    const subscription = org$
-      .pipe(
-        mergeMap((org) => TaxonService.get(org.id, value)),
-        tap((taxon) => setSelectedOption({ label: taxon.name, value: taxon })),
-      )
-      .subscribe()
-
-    return () => subscription.unsubscribe()
-  }, [value])
+  useQuery(["taxa", org.id, value], getTaxa, {
+    enabled: value && value > 0,
+    onSuccess: (taxon) => {
+      setSelectedOption({ label: taxon.name, value: taxon })
+    },
+    // initialData: [],
+  })
 
   return (
     <EuiComboBox<Taxon>
@@ -78,7 +54,8 @@ export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
         setSelectedOption(completion as Completion)
         onChange(completions?.[0]?.value ?? null)
       }}
-      onSearchChange={(value) => value && updateCompletions(value)}
+      // onSearchChange={(value) => value && updateCompletions(value)}
+      onSearchChange={setQuery}
       {...props}
     />
   )

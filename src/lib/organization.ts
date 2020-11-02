@@ -1,8 +1,8 @@
-import { Observable } from "rxjs"
-
+import { BehaviorSubject } from "rxjs"
 import * as api from "./api"
 
-const basePath = `/v1/orgs`
+const basePath = "/v1/orgs"
+const currentOrganizationKey = "current_organization"
 
 export interface Organization {
   id: number
@@ -11,19 +11,37 @@ export interface Organization {
   abbreviation: string
 }
 
+const initialOrganizationData = localStorage.getItem(currentOrganizationKey)
+
+export const currentOrganization$ = new BehaviorSubject<Organization | null>(
+  initialOrganizationData ? JSON.parse(initialOrganizationData) : null,
+  // : initialUserData
+  // ? JSON.parse(initialUserData).organizations?.[0]
+  // : null,
+)
+
+currentOrganization$.subscribe((value) => {
+  if (value) {
+    localStorage.setItem(currentOrganizationKey, JSON.stringify(value))
+  } else {
+    localStorage.removeItem(currentOrganizationKey)
+  }
+})
+
 export type OrganizationFormValues = Pick<
   Organization,
   "name" | "shortName" | "abbreviation"
 >
 
-export const list = (): Observable<Organization[]> => {
+export const list = async (): Promise<Organization[]> => {
+  console.log(`organizations.list: ${basePath}`)
   return api.get<Organization[]>(basePath)
 }
 
-export const get = (
-  id: string | number,
+export const get = async (
+  id: number,
   options?: { expand?: string[]; include?: string[] },
-): Observable<Organization> => {
+): Promise<Organization> => {
   const params = new URLSearchParams()
   if (options && !!options.expand) {
     params.append("expand", options.expand.join(","))
@@ -36,18 +54,13 @@ export const get = (
   return api.get(path)
 }
 
-export const create = (data: OrganizationFormValues): Observable<Organization> => {
-  console.log("OrganizationService.create()")
-  console.log(data)
-  return api.post<Organization, OrganizationFormValues>(basePath, data)
-}
+export const create = async (data: OrganizationFormValues): Promise<Organization> =>
+  api.post<Organization, OrganizationFormValues>(basePath, data)
 
-export const update = (
-  id: string | number,
+export const update = async (
+  id: number,
   data: OrganizationFormValues,
-): Observable<Organization> => {
-  console.log("OrganizationService.update()")
-  console.log(data)
+): Promise<Organization> => {
   const path = [basePath, id].join("/").concat("/")
   return api.patch<Organization, OrganizationFormValues>(path, data)
 }

@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react"
+import flatMap from "lodash/flatMap"
+import { useObservableEagerState } from "observable-hooks"
+import React, { useState } from "react"
+import { useInfiniteQuery } from "react-query"
 import {
   EuiAccordion,
   EuiLink,
@@ -6,63 +9,21 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
 } from "@elastic/eui"
-import { useObservableEagerState } from "observable-hooks"
 import _ from "lodash"
 
 import Page from "../Page"
 import { useSearchParams } from "../hooks/params"
-import * as TaxonService from "../lib/taxon"
-import { Taxon } from "../lib/taxon"
-import { TaxonSummaryBox } from "../TaxonSummaryBox"
-import { currentOrganization$ } from "../lib/user"
-import * as AccessionService from "../lib/accession"
-import { Accession } from "../lib/accession"
-import { AccessionSummaryBox } from "../AccessionSummaryBox"
 import { isNotEmpty } from "../lib/observables"
-import { ListResponse } from "../lib/api"
+import { Taxon, list as listTaxa } from "../lib/taxon"
+import { TaxonSummaryBox } from "../TaxonSummaryBox"
+import { currentOrganization$ } from "../lib/organization"
+import { Accession, list as listAccessions } from "../lib/accession"
+import { AccessionSummaryBox } from "../AccessionSummaryBox"
+import { ListOptions, ListResponse } from "../lib/api"
 import { ListItem } from "./ListItem"
 
-type SearchFunc<T> = (query: string) => ListResponse<T>
-
-const useSearchObservableState = <T,>(
-  searchFunc: SearchFunc<T>,
-  query: string | null,
-): [T[], (() => Promise<void>) | null] => {
-  const [data, setData] = useState<T[]>([])
-  const [nextPage$, setNextPage$] = useState<ListResponse<T> | null>(null)
-
-  const fetchNextPage = async (): Promise<void> => {
-    if (!nextPage$) {
-      return Promise.resolve()
-    }
-
-    return nextPage$.toPromise().then(([page, nextPage$]) => {
-      setData((data) => [...data, ...page])
-      setNextPage$(nextPage$)
-    })
-  }
-
-  useEffect(() => {
-    if (!query) {
-      return
-    }
-
-    setData([])
-    setNextPage$(null)
-
-    searchFunc(query)
-      .toPromise()
-      .then(([page, nextPage$]) => {
-        setData(page)
-        setNextPage$(nextPage$)
-      })
-  }, [query])
-
-  return [data, nextPage$ ? fetchNextPage : null]
-}
-
 type SearchResultItem = Accession | Taxon
-const pageSize = 10
+const pageSize = 4
 
 export const Search: React.FC = () => {
   const [selected, setSelected] = useState<SearchResultItem | null>(null)
@@ -71,23 +32,45 @@ export const Search: React.FC = () => {
   const searchParams = useSearchParams()
   const q = searchParams.get("q")
 
-  const [taxa, fetchNextTaxaPage] = useSearchObservableState(
-    (q: string) => TaxonService.list(org.id, { limit: pageSize, query: q }),
-    q,
+  const {
+    canFetchMore: canFetchMoreTaxa,
+    data: taxaPages,
+    fetchMore: fetchMoreTaxa,
+  } = useInfiniteQuery(
+    ["taxa", org?.id, { limit: pageSize, query: q }],
+    async (orgId, options, cursor) => {
+      const opts = cursor ? { cursor, ...(options as ListOptions) } : options
+      return await listTaxa(orgId as number, opts as ListOptions)
+    },
+    {
+      enabled: org && q,
+      getFetchMore: (lastPage) => lastPage.nextCursor,
+    },
   )
-  const [accessions, fetchNextAccessionsPage] = useSearchObservableState(
-    (q: string) =>
-      AccessionService.list(org.id, { limit: pageSize, query: q, include: ["taxon"] }),
-    q,
+
+  const {
+    canFetchMore: canFetchMoreAccessions,
+    data: accessionsPages,
+    fetchMore: fetchMoreAccessions,
+  } = useInfiniteQuery(
+    ["accessions", org?.id, { limit: pageSize, query: q, include: ["taxon"] }],
+    async (orgId, options, cursor) => {
+      const opts = cursor ? { cursor, ...(options as ListOptions) } : options
+      return await listAccessions(orgId as number, opts as ListOptions)
+    },
+    {
+      enabled: org && q,
+      getFetchMore: (lastPage) => lastPage.nextCursor,
+    },
   )
 
   function renderSearchResults() {
     function handleClick(item: SearchResultItem, type: string) {
-      setSelected(item)
+      setSelected({ ...item })
       setSelectedType(type)
     }
-    const accessionItems = accessions?.map((accession) => {
-      return (
+    const accessionItems = flatMap(accessionsPages, (accessions) =>
+      accessions.map((accession) => (
         <ListItem
           title={accession.code}
           subtitle={accession.taxon?.name ?? ""}
@@ -95,11 +78,11 @@ export const Search: React.FC = () => {
           onClick={() => handleClick(accession, "accession")}
           isActive={selected === accession}
         />
-      )
-    })
+      )),
+    )
 
-    const taxonItems = taxa?.map((taxon) => {
-      return (
+    const taxonItems = flatMap(taxaPages, (taxa) =>
+      taxa.map((taxon) => (
         <ListItem
           title={taxon.name}
           subtitle={taxon.rank}
@@ -107,8 +90,8 @@ export const Search: React.FC = () => {
           onClick={() => handleClick(taxon, "taxon")}
           isActive={selected === taxon}
         />
-      )
-    })
+      )),
+    )
 
     return (
       <>
@@ -117,16 +100,24 @@ export const Search: React.FC = () => {
           id="accessionsAccordion"
           initialIsOpen={true}
         >
-          <EuiListGroup>{accessionItems}</EuiListGroup>
+          <EuiListGroup>
+            {accessionItems}
+            {canFetchMoreAccessions && fetchMoreAccessions && (
+              <EuiLink className="Search--loadMore" onClick={() => fetchMoreAccessions()}>
+                Load more
+              </EuiLink>
+            )}
+          </EuiListGroup>
         </EuiAccordion>
-        {q && fetchNextAccessionsPage && (
-          <EuiLink onClick={() => fetchNextAccessionsPage()}>Load more</EuiLink>
-        )}
         <EuiAccordion buttonContent="Taxa" id="taxaAccordion" initialIsOpen={true}>
-          <EuiListGroup>{taxonItems}</EuiListGroup>
-          {q && fetchNextTaxaPage && (
-            <EuiLink onClick={() => fetchNextTaxaPage()}>Load more</EuiLink>
-          )}
+          <EuiListGroup>
+            {taxonItems}
+            {canFetchMoreTaxa && fetchMoreTaxa && (
+              <EuiLink className="Search--loadMore" onClick={() => fetchMoreTaxa()}>
+                Load more
+              </EuiLink>
+            )}
+          </EuiListGroup>
         </EuiAccordion>
       </>
     )

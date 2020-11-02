@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from "react"
-import { EMPTY, from } from "rxjs"
-import { catchError, finalize, switchMap, tap } from "rxjs/operators"
+import { useQueryCache } from "react-query"
+import { useAuth0 } from "@auth0/auth0-react"
 import { EuiLoadingSpinner } from "@elastic/eui"
 import "./App.css"
 import Router from "./Router"
-import { organizations$ } from "./lib/user"
-import { useAuth0 } from "@auth0/auth0-react"
-import * as OrganizationService from "./lib/organization"
-import { accessToken$ } from "./lib/auth"
+import { list as listOrganizations } from "./lib/organization"
+import { setAccessToken } from "./lib/auth"
 
 const App: React.FC = () => {
   console.log("entered App()")
   const { error, getAccessTokenSilently, isAuthenticated, isLoading } = useAuth0()
   const [ready, setReady] = useState(false)
-  // const history = useHistory()
+  const queryCache = useQueryCache()
+  const prefetchOrganizations = async () => {
+    await queryCache.prefetchQuery("organizations", listOrganizations)
+  }
 
   useEffect(() => {
     // TODO: handle useAuth0 error
@@ -31,26 +32,16 @@ const App: React.FC = () => {
       return
     }
 
-    // getAccessTokenSilently().then((token) => console.log("xxx - got-token"))
-    // TODO: either the organization list needs to be promisified or the
-    // getAccessTokenSilently needs to be turned into an observable so we can
-    // setReady in the finally block
-    const subscription = from(getAccessTokenSilently())
-      .pipe(
-        tap((token) => accessToken$.next(token)),
-        switchMap(() => OrganizationService.list()),
-        tap((orgs) => organizations$.next(orgs)),
-        catchError((err) => {
-          // this.notificationSvc.error("Search failed.");
-          // TODO: handle error
-          console.log(err)
-          return EMPTY
-        }),
-        finalize(() => setReady(true)),
-      )
-      .subscribe()
-
-    return () => subscription.unsubscribe()
+    console.log("getToken()")
+    getAccessTokenSilently()
+      .then((token) => setAccessToken(token))
+      .then(() => prefetchOrganizations())
+      .catch((err) => {
+        // this.notificationSvc.error("Search failed.");
+        // TODO: handle error
+        console.log(err)
+      })
+      .finally(() => setReady(true))
   }, [error, getAccessTokenSilently, isAuthenticated, isLoading])
 
   if (!ready) {

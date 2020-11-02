@@ -1,3 +1,4 @@
+import omit from "lodash/omit"
 import React, { useEffect, useState } from "react"
 import {
   EuiButton,
@@ -8,8 +9,6 @@ import {
   EuiTextColor,
 } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import { Observable } from "rxjs"
-import { finalize, tap } from "rxjs/operators"
 import _ from "lodash"
 
 import { Taxon, TaxonFormValues } from "../lib/taxon"
@@ -19,8 +18,8 @@ import { Rank, RankOption } from "./types"
 import { TaxonField } from "../TaxonField"
 
 interface Props {
-  taxon: Taxon | null
-  onSubmit: (values: TaxonFormValues) => Observable<Taxon>
+  taxon: Taxon
+  onSubmit: (values: TaxonFormValues) => Promise<Taxon>
 }
 
 const rankOptions: RankOption[] = [
@@ -52,31 +51,22 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
     setSelectedRankOption(rankOption)
   }, [taxon])
 
-  function handleSubmit(
+  const handleSubmit = async (
     values: TaxonFormValues,
     { setSubmitting }: FormikHelpers<TaxonFormValues>,
-  ) {
-    onSubmit(values)
-      .pipe(
-        tap(() => setSuccess(true)),
-        finalize(() => {
-          setSubmitting(false)
-        }),
-      )
-      .subscribe()
+  ): Promise<void> => {
+    try {
+      await onSubmit(values)
+      setSuccess(true)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <Formik<TaxonFormValues>
       enableReinitialize={true}
-      initialValues={
-        taxon ?? {
-          // id: -1,
-          name: "",
-          rank: "",
-          parentId: -1,
-        }
-      }
+      initialValues={omit(taxon, ["id"]) as Taxon}
       onSubmit={handleSubmit}
       validationSchema={GeneralTabSchema}
     >
@@ -94,6 +84,8 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
               <TaxonField
                 value={values.parentId}
                 onChange={(taxon) => {
+                  console.log("onChange()")
+                  console.log(taxon)
                   handleChange("parentId")(taxon?.id.toString() ?? "")
                 }}
               />

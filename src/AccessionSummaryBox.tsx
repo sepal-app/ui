@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
+import { useQuery } from "react-query"
 import { EuiButtonEmpty, EuiFlexGroup, EuiFlexItem, EuiText } from "@elastic/eui"
 import { useObservableEagerState } from "observable-hooks"
 import { useHistory } from "react-router-dom"
 
-import * as AccessionService from "./lib/accession"
-import { Accession } from "./lib/accession"
-import { currentOrganization$ } from "./lib/user"
+import { Accession, get as getAccession } from "./lib/accession"
+import { currentOrganization$ } from "./lib/organization"
 import { isNotEmpty } from "./lib/observables"
 
 interface Props {
@@ -16,17 +16,12 @@ export const AccessionSummaryBox: React.FC<Props> = ({ item }) => {
   const history = useHistory()
   const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
   const [accession, setAccession] = useState(item)
-
-  useEffect(() => {
-    if (!item || !org) {
-      return
-    }
-
-    // get full accession details
-    AccessionService.get(org.id, item.id, { include: ["taxon"] })
-      .toPromise()
-      .then(setAccession)
-  }, [item, org])
+  useQuery(["accession", org.id, item.id, { include: "taxon" }], getAccession, {
+    enabled: item,
+    onSuccess: (data) => {
+      setAccession(data)
+    },
+  })
 
   return (
     <>
@@ -38,7 +33,7 @@ export const AccessionSummaryBox: React.FC<Props> = ({ item }) => {
           <EuiFlexItem grow={false}>
             <EuiButtonEmpty
               size="xs"
-              onClick={() => history.push(`/accession/${accession.id}`)}
+              onClick={() => history.push(`/accession/${accession?.id}`)}
             >
               Edit
             </EuiButtonEmpty>

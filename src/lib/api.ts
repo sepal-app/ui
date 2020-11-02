@@ -1,9 +1,5 @@
-import { Observable, from, of, zip } from "rxjs"
-import { map, switchMap, tap } from "rxjs/operators"
-import { fromFetch } from "rxjs/fetch"
-
 import { toCamelCase, toSnakeCase } from "./case"
-import { accessToken$, logout } from "./auth"
+import { getAccessToken, logout } from "./auth"
 
 const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
 
@@ -22,15 +18,16 @@ export type ListOptions = {
   cursor?: string
   limit?: number
   query?: string
+  include?: string[]
 }
 
-export type ListResponse<T> = Observable<[T[], ListResponse<T> | null]>
+export type ListResponse<T> = T[] & { nextCursor: string | null }
 
 export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => string) => ({
-  list: (
+  list: async (
     orgId: string | number,
-    { cursor = undefined, limit = 50, query = undefined }: ListOptions = {},
-  ): ListResponse<T> => {
+    { cursor = undefined, limit = 50, query = undefined, include }: ListOptions = {},
+  ): Promise<ListResponse<T>> => {
     const params = new URLSearchParams()
     if (cursor) {
       params.append("cursor", cursor)
@@ -41,36 +38,37 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
     if (query) {
       params.append("q", query)
     }
+    if (include) {
+      for (const e of include) {
+        params.append("include", e)
+      }
+    }
 
     let url: string | null = [
       baseUrl.concat(pathTemplate(orgId)),
       params.toString(),
     ].join("?")
 
-    const fetchPage = (path: string): ListResponse<T> =>
-      request(path, {}).pipe(
-        tap(() => console.log("requested page")),
-        switchMap((resp: Response) =>
-          zip(from(resp.json()), of(getNextLink(resp.headers))),
-        ),
-        map(([data, nextPageUrl]) => [
-          data.map((d: T) => toCamelCase<T>(d)),
-          nextPageUrl ? fetchPage(nextPageUrl) : null,
-        ]),
-      )
-
-    return fetchPage(url)
+    const resp = await request(url)
+    const respData = await resp.json()
+    const nextPageUrl = getNextLink(resp.headers)
+    // return [respData, nextPageUrl]
+    const nextCursor = nextPageUrl
+      ? new URL(nextPageUrl).searchParams.get("cursor")
+      : null
+    // return { data: respData, nextCursor }
+    console.log(`nextPageUrl: ${nextPageUrl}`)
+    console.log(`nextCursor: ${nextCursor}`)
+    respData.nextCursor = nextCursor
+    return respData
   },
 
-  get: (
+  get: async (
     orgId: string | number,
     id: string | number,
-    options?: { expand?: string[]; include?: string[] },
-  ): Observable<T> => {
+    options?: { include?: string[] },
+  ): Promise<T> => {
     const params = new URLSearchParams()
-    if (options && !!options.expand) {
-      params.append("expand", options.expand.join(","))
-    }
     if (options && !!options.include) {
       params.append("include", options.include.join(","))
     }
@@ -79,12 +77,12 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
     return get<T>(path)
   },
 
-  create: (orgId: string | number, data: F): Observable<T> => {
+  create: async (orgId: string | number, data: F): Promise<T> => {
     const path = pathTemplate(orgId)
     return post<T, F>(path, data)
   },
 
-  update: (orgId: string | number, id: string | number, data: F): Observable<T> => {
+  update: async (orgId: string | number, id: string | number, data: F): Promise<T> => {
     const path = [pathTemplate(orgId), id].join("/")
     return patch<T, F>(path, data)
   },
@@ -99,60 +97,56 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
 //   }
 // }
 
-const request = (url: string, options?: RequestInit): Observable<Response> =>
-  fromFetch(url, {
+const request = async (url: string, options?: RequestInit): Promise<Response> => {
+  const resp = await fetch(url, {
     method: "GET",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken$.getValue()}`,
+      Authorization: `Bearer ${getAccessToken()}`,
       ...options?.headers,
     },
     ...options,
-  }).pipe(
-    tap((resp) => {
-      if (resp?.status === 401) {
-        // TODO: first try to refresh the token
-        logout()
-      }
-    }),
-    map((resp) => {
-      if (!resp.ok) throw resp
-      return resp
-    }),
-    // TODO: make sure response is JSON
-    //switchMap((resp) => from(resp.json())),
-  )
+  })
+  if (resp?.status === 401) {
+    // TODO: first try to refresh the token
+    logout()
+  }
 
-export const get = <T>(path: string): Observable<T> =>
-  request(baseUrl.concat(path), { method: "GET" }).pipe(
-    switchMap((resp: Response) => from(resp.json())),
-    map((data) =>
-      Array.isArray(data)
-        ? ((data.map((d) => toCamelCase(d)) as unknown) as T)
-        : toCamelCase<T>(data),
-    ),
-  )
+  if (!resp.ok) {
+    throw resp
+  }
 
-export const post = <T, K>(path: string, data: K): Observable<T> =>
-  request(baseUrl.concat(path), {
+  return resp
+}
+
+export const get = async <T>(path: string): Promise<T> => {
+  const resp = await request(baseUrl.concat(path), { method: "GET" })
+  const respData = await resp.json()
+  return Array.isArray(respData)
+    ? ((respData.map((d) => toCamelCase(d)) as unknown) as T)
+    : toCamelCase<T>(respData)
+}
+
+export const post = async <T, K>(path: string, data: K): Promise<T> => {
+  const resp = await request(baseUrl.concat(path), {
     method: "POST",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(
-    switchMap((resp: Response) => from(resp.json())),
-    map((data) => toCamelCase(data)),
-  )
+  })
+  const respData = await resp.json()
+  return toCamelCase(respData)
+}
 
-export const patch = <T, K>(path: string, data: K): Observable<T> =>
-  request(baseUrl.concat(path), {
+export const patch = async <T, K>(path: string, data: K): Promise<T> => {
+  const resp = await request(baseUrl.concat(path), {
     method: "PATCH",
     body: JSON.stringify(toSnakeCase(data)),
-  }).pipe(
-    switchMap((resp: Response) => from(resp.json())),
-    map((data) => toCamelCase(data)),
-  )
+  })
+  const respData = await resp.json()
+  return toCamelCase(respData)
+}
 
-export const del = (path: string): Observable<any> =>
+export const del = async (path: string): Promise<any> =>
   request(baseUrl.concat(path), {
     method: "DELETE",
   })

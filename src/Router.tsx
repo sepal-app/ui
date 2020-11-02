@@ -1,4 +1,5 @@
 import React, { ComponentProps, ComponentType } from "react"
+import { useQuery, useQueryCache } from "react-query"
 import { Redirect, Route, Switch } from "react-router-dom"
 import { useAuth0, withAuthenticationRequired } from "@auth0/auth0-react"
 
@@ -9,7 +10,7 @@ import { Search } from "./Search"
 import { Settings } from "./Settings"
 import { TaxonForm } from "./TaxonForm"
 import { LocationForm } from "./LocationForm"
-import { organizations$ } from "./lib/user"
+import { Organization, list as listOrganizations } from "./lib/organization"
 
 const Loading = () => <div>Redirecting to login...</div>
 
@@ -19,7 +20,8 @@ const PrivateRoute: React.FC<ComponentProps<typeof Route>> = ({
   ...args
 }) => {
   const { isAuthenticated, loginWithRedirect } = useAuth0()
-  const orgs = organizations$.value
+  const queryCache = useQueryCache()
+  const { data: orgs } = useQuery("organizations", listOrganizations)
 
   if (!isAuthenticated) {
     console.log("Redirect to /login")
