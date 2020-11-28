@@ -3,6 +3,7 @@ import { EuiFlexGroup, EuiFlexItem, EuiSideNav } from "@elastic/eui"
 
 import Page from "../Page"
 import { Profile } from "./Profile"
+import { Organization } from "./Organization"
 
 export const Settings: React.FC = () => {
   const [selectedId, setSelectedId] = useState(0)
@@ -10,12 +11,12 @@ export const Settings: React.FC = () => {
 
   const items = [
     {
-      name: "Profile",
+      title: "Profile",
       component: <Profile />,
     },
     {
-      name: "Organization",
-      component: <Profile />,
+      title: "Organization",
+      component: <Organization />,
     },
   ]
 
@@ -23,9 +24,9 @@ export const Settings: React.FC = () => {
     {
       name: "",
       id: -1,
-      items: items.map(({ name, component }, i) => ({
+      items: items.map(({ component, title }, i) => ({
         id: i,
-        name,
+        name: title,
         // onClick: () => setActiveComponent(component),
         onClick: () => setSelectedId(i),
         isSelected: selectedId === i,
@@ -34,7 +35,7 @@ export const Settings: React.FC = () => {
   ]
 
   return (
-    <Page>
+    <Page pageTitle="Settings" contentTitle={items[selectedId].title}>
       <EuiFlexGroup>
         <EuiFlexItem grow={false}>
           <EuiSideNav
@@ -43,7 +44,7 @@ export const Settings: React.FC = () => {
             items={sideNav}
           />
         </EuiFlexItem>
-        <EuiFlexItem>{items[0].component}</EuiFlexItem>
+        <EuiFlexItem>{items[selectedId].component}</EuiFlexItem>
       </EuiFlexGroup>
     </Page>
   )

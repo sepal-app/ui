@@ -44,7 +44,7 @@ const Page: React.FC<Props> = ({ pageTitle, contentTitle, children, navbarOption
   return (
     <>
       <Navbar {...navbarOptions} />
-      <EuiPage restrictWidth={true} className="Page--EuiPage">
+      <EuiPage className="Page--EuiPage">
         <EuiPageBody>
           {header}
           <EuiPageContent className="Page--EuiPageContent">

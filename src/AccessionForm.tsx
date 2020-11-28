@@ -6,7 +6,6 @@ import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@ela
 import { Form, Formik, FormikHelpers } from "formik"
 import { useObservableEagerState } from "observable-hooks"
 import { isNotEmpty } from "./lib/observables"
-import _ from "lodash"
 
 import Page from "./Page"
 import {

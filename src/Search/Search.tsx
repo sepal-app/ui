@@ -9,7 +9,6 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
 } from "@elastic/eui"
-import _ from "lodash"
 
 import Page from "../Page"
 import { useSearchParams } from "../hooks/params"

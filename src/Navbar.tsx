@@ -130,7 +130,7 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
         closePopover={() => setShowUserMenu(false)}
       >
         <EuiKeyPadMenu>
-          <EuiKeyPadMenuItem label="Settings" href="/settings">
+          <EuiKeyPadMenuItem label="Settings" onClick={() => history.push("/settings")}>
             <EuiIcon type="advancedSettingsApp" size="l" />
           </EuiKeyPadMenuItem>
           <EuiKeyPadMenuItem label="Logout" onClick={() => handleLogout()}>

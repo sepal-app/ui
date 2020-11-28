@@ -2,7 +2,6 @@ import React, { useState } from "react"
 import { useQuery } from "react-query"
 import { EuiComboBox } from "@elastic/eui"
 import { useObservableEagerState } from "observable-hooks"
-import _ from "lodash"
 
 import { ListOptions } from "./lib/api"
 import { isNotEmpty } from "./lib/observables"
