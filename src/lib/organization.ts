@@ -64,3 +64,8 @@ export const update = async (
   const path = [basePath, id].join("/").concat("/")
   return api.patch<Organization, OrganizationFormValues>(path, data)
 }
+
+export const users = async (id: number): Promise<Organization[]> => {
+  const path = [basePath, id, "users"].join("/")
+  return api.get<Organization[]>(path)
+}

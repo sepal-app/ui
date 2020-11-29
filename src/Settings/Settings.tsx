@@ -35,7 +35,7 @@ export const Settings: React.FC = () => {
   ]
 
   return (
-    <Page pageTitle="Settings" contentTitle={items[selectedId].title}>
+    <Page pageTitle="Settings">
       <EuiFlexGroup>
         <EuiFlexItem grow={false}>
           <EuiSideNav

@@ -48,7 +48,7 @@ const App: React.FC = () => {
       .then((token) => setAccessToken(token))
       .then(() =>
         fetchProfile().catch((err) => {
-          if (err.status == 404) {
+          if (err.status === 404) {
             const { email, name, picture } = user
             createProfileMutation({ email, name, picture })
           } else {
