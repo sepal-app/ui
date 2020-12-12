@@ -21,7 +21,7 @@ export const TaxonForm: React.FC = () => {
       id: -1,
       name: "",
       rank: "",
-      parentId: -1,
+      parentId: null,
     },
     initialStale: true,
   })
