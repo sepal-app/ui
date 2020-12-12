@@ -1,11 +1,11 @@
 import React from "react"
 import ReactDOM from "react-dom"
 import "./index.scss"
-import App from "./App"
+import { App } from "./App"
 import { QueryCache, ReactQueryCacheProvider } from "react-query"
 
 import { BrowserRouter } from "react-router-dom"
-import { Auth0ProviderWithHistory } from "./Auth0ProviderWithHistory"
+import { FirebaseAuthProvider } from "./FirebaseAuthProvider"
 
 const queryCache = new QueryCache({
   defaultConfig: {
@@ -35,11 +35,11 @@ const queryCache = new QueryCache({
 ReactDOM.render(
   <React.StrictMode>
     <BrowserRouter>
-      <Auth0ProviderWithHistory>
+      <FirebaseAuthProvider>
         <ReactQueryCacheProvider queryCache={queryCache}>
           <App />
         </ReactQueryCacheProvider>
-      </Auth0ProviderWithHistory>
+      </FirebaseAuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
   document.getElementById("root"),

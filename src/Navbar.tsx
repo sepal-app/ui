@@ -17,7 +17,6 @@ import {
   EuiText,
 } from "@elastic/eui"
 import { useObservableEagerState } from "observable-hooks"
-import { useAuth0 } from "@auth0/auth0-react"
 import { isNotEmpty } from "./lib/observables"
 
 import {
@@ -33,17 +32,13 @@ interface Props {
 }
 
 export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }) => {
-  const { logout } = useAuth0()
   const history = useHistory()
   const [query, setQuery] = useState<string | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [, setShowOrgMenu] = useState(false)
-
-  // TODO: should we just get these straight from the query cache instead of
-  // doing a separate query here?
   const queryCache = useQueryCache()
-  // const { data: organizations } = useQuery("organizations", listOrganizations)
+
   const organizations = queryCache.getQueryData<Organization[]>("organizations")
 
   const currentOrganization = useObservableEagerState(
@@ -84,8 +79,7 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   async function handleLogout() {
     setShowUserMenu(false)
     setShowOrgMenu(false)
-    logout()
-    history.push("/")
+    history.push("/logout")
   }
 
   function renderOrgMenu() {

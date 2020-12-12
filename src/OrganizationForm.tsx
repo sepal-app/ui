@@ -1,9 +1,9 @@
 import omit from "lodash/omit"
-import React from "react"
-import { useMutation, useQuery } from "react-query"
+import React, { useCallback } from "react"
+import { useMutation, useQuery, useQueryCache } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
 import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
-import { Form, Formik, FormikHelpers } from "formik"
+import { Formik, FormikHelpers } from "formik"
 
 import Page from "./Page"
 import {
@@ -12,6 +12,7 @@ import {
   create,
   currentOrganization$,
   get as getOrganization,
+  list as listOrganizations,
   update,
 } from "./lib/organization"
 import { useExpiringState, useSearchParams } from "./hooks"
@@ -20,8 +21,13 @@ export const OrganizationForm: React.FC = () => {
   const params = useParams<{ id: string }>()
   const [success, setSuccess] = useExpiringState(false, 1000)
   const searchParams = useSearchParams()
-  // const id = searchParams.get("id")
+  const redirect = searchParams.get("redirect")
   const title = params.id ? "Edit organization" : "Create an organization"
+  const history = useHistory()
+  const queryCache = useQueryCache()
+  const prefetchOrganizations = useCallback(async () => {
+    await queryCache.prefetchQuery("organizations", listOrganizations)
+  }, [queryCache])
 
   const { data: organization } = useQuery(["organization", params.id], getOrganization, {
     enabled: params.id,
@@ -33,6 +39,7 @@ export const OrganizationForm: React.FC = () => {
     },
     initialStale: true,
   })
+
   const [createOrganization] = useMutation((values: OrganizationFormValues) =>
     create(values),
   )
@@ -40,30 +47,28 @@ export const OrganizationForm: React.FC = () => {
     update(organization?.id ?? -1, values),
   )
 
-  const handleSubmit = async (
+  const onSubmit = async (
     values: OrganizationFormValues,
     { setSubmitting }: FormikHelpers<OrganizationFormValues>,
   ) => {
-    const save = params.id
-      ? updateOrganization(values)
-      : createOrganization(values).then((org) => {
-          currentOrganization$.next(org as Organization)
-          // TODO: if has a redirect param then follow
-          // if (acc?.id) {
-          //   history.push(`/organization/${acc.id}`)
-          //   history.goForward()
-          // }
-          // return acc
-          return org
-        })
+    const save = params.id ? updateOrganization(values) : createOrganization(values)
 
     try {
-      await save
+      const org = await save
+      await prefetchOrganizations()
+      currentOrganization$.next(org as Organization)
       setSuccess(true)
+      if (redirect) {
+        history.push(redirect)
+      }
     } catch (e) {
       console.log(e)
     } finally {
-      setSubmitting(false)
+      if (!redirect) {
+        // don't try to set the state if we're redirecting since this component
+        // might have been unmounted at this point
+        setSubmitting(false)
+      }
     }
   }
 
@@ -74,41 +79,39 @@ export const OrganizationForm: React.FC = () => {
     >
       <Formik<OrganizationFormValues>
         enableReinitialize={true}
-        onSubmit={handleSubmit}
+        onSubmit={onSubmit}
         initialValues={omit(organization, ["id"]) as Organization}
       >
-        {({ values, handleChange }) => (
-          <Form>
-            <EuiForm>
-              <EuiFormRow label="Full name">
-                <EuiFieldText name="name" onChange={handleChange} value={values.name} />
-              </EuiFormRow>
-              <EuiFormRow label="Short name">
-                <EuiFieldText
-                  name="shortName"
-                  onChange={handleChange}
-                  value={values.shortName}
-                />
-              </EuiFormRow>
-              <EuiFormRow label="Abbreviation">
-                <EuiFieldText
-                  name="abbreviation"
-                  onChange={handleChange}
-                  value={values.abbreviation}
-                />
-              </EuiFormRow>
-              <div style={{ marginTop: "20px" }}>
-                <EuiButton fill type="submit">
-                  Save
-                </EuiButton>
-                {success && (
-                  <EuiTextColor color="secondary" style={{ marginLeft: "20px" }}>
-                    Success!
-                  </EuiTextColor>
-                )}
-              </div>
-            </EuiForm>
-          </Form>
+        {({ values, handleChange, handleSubmit }) => (
+          <EuiForm component="form" onSubmit={handleSubmit}>
+            <EuiFormRow label="Full name">
+              <EuiFieldText name="name" onChange={handleChange} value={values.name} />
+            </EuiFormRow>
+            <EuiFormRow label="Short name">
+              <EuiFieldText
+                name="shortName"
+                onChange={handleChange}
+                value={values.shortName}
+              />
+            </EuiFormRow>
+            <EuiFormRow label="Abbreviation">
+              <EuiFieldText
+                name="abbreviation"
+                onChange={handleChange}
+                value={values.abbreviation}
+              />
+            </EuiFormRow>
+            <div style={{ marginTop: "20px" }}>
+              <EuiButton fill type="submit">
+                Save
+              </EuiButton>
+              {success && (
+                <EuiTextColor color="secondary" style={{ marginLeft: "20px" }}>
+                  Success!
+                </EuiTextColor>
+              )}
+            </div>
+          </EuiForm>
         )}
       </Formik>
     </Page>

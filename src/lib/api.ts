@@ -1,5 +1,6 @@
+import firebase from "firebase/app"
 import { toCamelCase, toSnakeCase } from "./case"
-import { getAccessToken, logout } from "./auth"
+import { logout } from "./auth"
 
 const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
 
@@ -98,12 +99,13 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
 // }
 
 const request = async (url: string, options?: RequestInit): Promise<Response> => {
+  const token = await firebase.auth().currentUser?.getIdToken()
   const resp = await fetch(url, {
     method: "GET",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      Authorization: `Bearer ${getAccessToken()}`,
+      Authorization: `Bearer ${token}`,
       ...options?.headers,
     },
     ...options,
