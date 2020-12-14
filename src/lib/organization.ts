@@ -55,13 +55,10 @@ export const get = async (
 export const create = async (data: OrganizationFormValues): Promise<Organization> =>
   await api.post<Organization, OrganizationFormValues>(basePath, data)
 
-export const update = async ({
-  id,
-  data,
-}: {
-  id: number
-  data: OrganizationFormValues
-}): Promise<Organization> => {
+export const update = async (
+  id: number,
+  data: OrganizationFormValues,
+): Promise<Organization> => {
   const path = [basePath, id].join("/").concat("/")
   return await api.patch<Organization, OrganizationFormValues>(path, data)
 }
