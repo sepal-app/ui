@@ -4,8 +4,8 @@ export function toCamelCase<T>(obj: any): T {
   return _.transform<any, T>(
     obj,
     (result: T, value: any, key: string) => {
-      if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
-        value = value.map((i) => toCamelCase(i))
+      if (_.isArray(value)) {
+        value = value.map((i) => (_.isObject(i) ? toCamelCase(i) : i))
       } else if (_.isPlainObject(value)) {
         value = toCamelCase(value)
       }
@@ -19,9 +19,9 @@ export function toSnakeCase<T>(obj: any): T {
   return _.transform<any, T>(
     obj,
     (result: T, value: any, key: string) => {
-      if (_.isArray(value) && value.length && _.isPlainObject(value[0])) {
-        value = value.map((i) => toSnakeCase(i))
-      } else if (_.isObject(value)) {
+      if (_.isArray(value)) {
+        value = value.map((i) => (_.isObject(i) ? toSnakeCase(i) : i))
+      } else if (_.isPlainObject(value)) {
         value = toSnakeCase(value)
       }
       ;(result as any)[_.snakeCase(key)] = value

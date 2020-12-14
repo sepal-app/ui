@@ -2,7 +2,7 @@ import firebase from "firebase/app"
 import { toCamelCase, toSnakeCase } from "./case"
 import { logout } from "./auth"
 
-const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
+export const baseUrl = process.env.REACT_APP_SEPAL_API_URL as string
 
 const getNextLink = (headers: Headers): string | null => {
   if (!headers.has("link")) {
@@ -98,7 +98,7 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
 //   }
 // }
 
-const request = async (url: string, options?: RequestInit): Promise<Response> => {
+export const request = async (url: string, options?: RequestInit): Promise<Response> => {
   const token = await firebase.auth().currentUser?.getIdToken()
   const resp = await fetch(url, {
     method: "GET",
@@ -130,7 +130,7 @@ export const get = async <T>(path: string): Promise<T> => {
     : toCamelCase<T>(respData)
 }
 
-export const post = async <T, K>(path: string, data: K): Promise<T> => {
+export const post = async <T, K>(path: string, data?: K): Promise<T> => {
   const resp = await request(baseUrl.concat(path), {
     method: "POST",
     body: JSON.stringify(toSnakeCase(data)),

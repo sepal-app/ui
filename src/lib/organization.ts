@@ -33,10 +33,8 @@ export type OrganizationFormValues = Pick<
   "name" | "shortName" | "abbreviation"
 >
 
-export const list = async (): Promise<Organization[]> => {
-  console.log(`organizations.list: ${basePath}`)
-  return api.get<Organization[]>(basePath)
-}
+export const list = async (): Promise<Organization[]> =>
+  await api.get<Organization[]>(basePath)
 
 export const get = async (
   id: number,
@@ -51,21 +49,29 @@ export const get = async (
   }
   const queryParams = "?".concat(params.toString())
   const path = [basePath, id, queryParams].join("/")
-  return api.get(path)
+  return await api.get(path)
 }
 
 export const create = async (data: OrganizationFormValues): Promise<Organization> =>
-  api.post<Organization, OrganizationFormValues>(basePath, data)
+  await api.post<Organization, OrganizationFormValues>(basePath, data)
 
-export const update = async (
-  id: number,
-  data: OrganizationFormValues,
-): Promise<Organization> => {
+export const update = async ({
+  id,
+  data,
+}: {
+  id: number
+  data: OrganizationFormValues
+}): Promise<Organization> => {
   const path = [basePath, id].join("/").concat("/")
-  return api.patch<Organization, OrganizationFormValues>(path, data)
+  return await api.patch<Organization, OrganizationFormValues>(path, data)
 }
 
 export const users = async (id: number): Promise<Organization[]> => {
   const path = [basePath, id, "users"].join("/")
-  return api.get<Organization[]>(path)
+  return await api.get<Organization[]>(path)
+}
+
+export const invite = async (id: number, emails: string[]): Promise<Response> => {
+  const path = [basePath, id, "invite"].join("/")
+  return api.post(path, { emails })
 }

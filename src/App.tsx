@@ -3,7 +3,7 @@ import { useMutation, useQueryCache } from "react-query"
 import "./App.css"
 import Router from "./Router"
 import { FullPageLoadingSpinner } from "./FullPageLoadingSpinner"
-import { list as listOrganizations } from "./lib/organization"
+import { currentOrganization$, list as listOrganizations } from "./lib/organization"
 import {
   ProfileCreateValues,
   create as createProfile,
@@ -14,12 +14,9 @@ import { useAuth } from "./lib/auth"
 export const App: React.FC = () => {
   const [ready, setReady] = useState(false)
   const queryCache = useQueryCache()
-  const prefetchOrganizations = useCallback(async () => {
-    await queryCache.prefetchQuery("organizations", listOrganizations)
-  }, [queryCache])
-  const fetchProfile = useCallback(async () => {
-    await queryCache.fetchQuery("profile", getProfile)
-  }, [queryCache])
+  const fetchOrganizations = () =>
+    queryCache.fetchQuery("organizations", listOrganizations)
+  const fetchProfile = async () => queryCache.fetchQuery("profile", getProfile)
   const { loading, user } = useAuth()
 
   const [createProfileMutation] = useMutation((values: ProfileCreateValues) =>
@@ -27,7 +24,19 @@ export const App: React.FC = () => {
   )
 
   useEffect(() => {
-    if (loading || !user) {
+    if (loading) {
+      return
+    }
+
+    if (!loading && !user) {
+      // not logged in
+      setReady(true)
+      return
+    }
+
+    if (!user) {
+      // TODO: it seems like typescript wouldn't need this guard b/c of the
+      // previous conditional?
       return
     }
 
@@ -42,14 +51,19 @@ export const App: React.FC = () => {
           throw err
         }
       })
-      .then(() => prefetchOrganizations())
+      .then(() => fetchOrganizations())
+      .then((orgs) => {
+        if (!currentOrganization$.value && orgs) {
+          currentOrganization$.next(orgs[0])
+        }
+      })
       .catch((err) => {
         // this.notificationSvc.error("Search failed.");
         // TODO: handle error
         console.log(err)
       })
       .finally(() => setReady(true))
-  }, [createProfileMutation, fetchProfile, loading, prefetchOrganizations, user])
+  }, [createProfileMutation, fetchProfile, loading, fetchOrganizations, user])
 
   return ready ? <Router /> : <FullPageLoadingSpinner />
 }

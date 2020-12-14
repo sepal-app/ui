@@ -14,6 +14,8 @@ import {
 } from "@elastic/eui"
 import { Formik } from "formik"
 import { signup } from "./lib/auth"
+import { accept as accept_invitation } from "./lib/invitation"
+import { useSearchParams } from "./hooks"
 
 interface FormValues {
   email: string
@@ -22,10 +24,16 @@ interface FormValues {
 }
 export const Register: React.FC = () => {
   const history = useHistory()
+  const searchParams = useSearchParams()
+  // TODO: if we have the email we can prefill the email field
+  const invitation = searchParams.get("invitation")
 
   const onSubmit = async (values: FormValues) => {
     try {
       await signup(values.email, values.password)
+      if (invitation) {
+        await accept_invitation(invitation)
+      }
       history.push("/")
     } catch (e) {
       // TODO

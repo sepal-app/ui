@@ -11,7 +11,6 @@ export const useAuth = () => {
     // return so the effect will unsubscribe
     return auth.onAuthStateChanged((user) => {
       console.log("-- auth state changed --")
-      console.log(!!user)
       setUser(user)
       setLoading(false)
     })
