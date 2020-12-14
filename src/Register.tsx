@@ -15,7 +15,7 @@ import {
 import { Formik } from "formik"
 import { signup } from "./lib/auth"
 import { accept as accept_invitation } from "./lib/invitation"
-import { useSearchParams } from "./hooks"
+import { useInitUser, useSearchParams } from "./hooks"
 
 interface FormValues {
   email: string
@@ -27,12 +27,15 @@ export const Register: React.FC = () => {
   const searchParams = useSearchParams()
   // TODO: if we have the email we can prefill the email field
   const invitation = searchParams.get("invitation")
+  const initUser = useInitUser()
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await signup(values.email, values.password)
-      if (invitation) {
+      const { user } = await signup(values.email, values.password)
+      if (invitation && user) {
         await accept_invitation(invitation)
+        // TODO: prefetch the organizations and set the current organization
+        await initUser(user)
       }
       history.push("/")
     } catch (e) {
