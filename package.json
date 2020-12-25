@@ -43,6 +43,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:dev": ". .env.development && react-scripts build",
+    "deploy:dev": "npm run build:dev && firebase deploy --only hosting:$REACT_APP_FIREBASE_PROJECT_ID",
     "test": "react-scripts test",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ."
   },
