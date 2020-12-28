@@ -28,7 +28,6 @@ export const OrganizationForm: React.FC = () => {
   const prefetchOrganizations = useCallback(async () => {
     await queryClient.prefetchQuery("organizations", listOrganizations)
   }, [queryClient])
-  const { register, handleSubmit, errors } = useForm<OrganizationFormValues>()
   const [submitting, setSubmitting] = useState(false)
 
   const { data: organization, error: organizationError } = useQuery(
