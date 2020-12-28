@@ -1,5 +1,5 @@
 import React, { useState, KeyboardEvent } from "react"
-import { useQueryCache } from "react-query"
+import { useQueryClient } from "react-query"
 import { useHistory } from "react-router-dom"
 import {
   EuiContextMenuPanel,
@@ -37,9 +37,9 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [, setShowOrgMenu] = useState(false)
-  const queryCache = useQueryCache()
+  const queryClient = useQueryClient()
 
-  const organizations = queryCache.getQueryData<Organization[]>("organizations")
+  const organizations = queryClient.getQueryData<Organization[]>("organizations")
 
   const currentOrganization = useObservableEagerState(
     currentOrganization$.pipe(isNotEmpty()),

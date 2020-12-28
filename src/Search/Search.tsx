@@ -32,42 +32,45 @@ export const Search: React.FC = () => {
   const q = searchParams.get("q")
 
   const {
-    canFetchMore: canFetchMoreTaxa,
-    data: taxaPages,
-    fetchMore: fetchMoreTaxa,
+    hasNextPage: canFetchMoreTaxa,
+    data: taxaData,
+    fetchNextPage: fetchMoreTaxa,
   } = useInfiniteQuery(
     ["taxa", org?.id, { limit: pageSize, query: q }],
-    async (orgId, options, cursor) => {
-      const opts = cursor ? { cursor, ...(options as ListOptions) } : options
-      return await listTaxa(orgId as number, opts as ListOptions)
+    async ({ pageParam: cursor }) => {
+      const opts = cursor ? { cursor } : undefined
+      return await listTaxa(org.id, opts)
     },
     {
-      enabled: org && q,
-      getFetchMore: (lastPage) => lastPage.nextCursor,
+      enabled: !!(org && q),
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   )
 
+  const taxaPages = taxaData?.pages ?? []
+
   const {
-    canFetchMore: canFetchMoreAccessions,
-    data: accessionsPages,
-    fetchMore: fetchMoreAccessions,
+    hasNextPage: canFetchMoreAccessions,
+    data: accessionsData,
+    fetchNextPage: fetchMoreAccessions,
   } = useInfiniteQuery(
     ["accessions", org?.id, { limit: pageSize, query: q, include: ["taxon"] }],
-    async (orgId, options, cursor) => {
-      const opts = cursor ? { cursor, ...(options as ListOptions) } : options
-      return await listAccessions(orgId as number, opts as ListOptions)
-    },
+    ({ pageParam: cursor }) =>
+      listAccessions(org.id, { cursor, include: ["taxon"], limit: pageSize, query: q }),
     {
-      enabled: org && q,
-      getFetchMore: (lastPage) => lastPage.nextCursor,
+      enabled: !!(org && q),
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   )
+
+  const accessionsPages = accessionsData?.pages ?? []
 
   function renderSearchResults() {
     function handleClick(item: SearchResultItem, type: string) {
       setSelected({ ...item })
       setSelectedType(type)
     }
+
     const accessionItems = flatMap(accessionsPages, (accessions) =>
       accessions.map((accession) => (
         <ListItem

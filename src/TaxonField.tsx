@@ -24,17 +24,17 @@ export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
   const [query, setQuery] = useState<string | null>()
   const { data: completions } = useQuery(
     ["taxa", org.id, { query }],
-    async (orgId: number, options: ListOptions) => {
-      const taxa = await listTaxa(orgId, options)
+    async () => {
+      const taxa = await listTaxa(org.id, { query })
       return taxa.map((taxon) => ({ label: taxon.name, value: taxon }))
     },
     {
-      enabled: query,
+      enabled: !!query,
     },
   )
 
-  useQuery(["taxa", org.id, value], getTaxa, {
-    enabled: value && value > 0,
+  useQuery(["taxa", org.id, value], () => getTaxa(org.id, value as number), {
+    enabled: !!(value && value > 0),
     onSuccess: (taxon) => {
       setSelectedOption({ label: taxon.name, value: taxon })
     },

@@ -17,13 +17,17 @@ export const TaxonSummaryBox: React.FC<Props> = ({ item }) => {
   const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
   const [taxon, setTaxon] = useState(item)
 
-  useQuery(["taxon", org.id, item.id, { include: ["parent"] }], getTaxon, {
-    enabled: item,
-    onSuccess: (data) => {
-      console.log(data)
-      setTaxon(data)
+  useQuery(
+    ["taxon", org.id, item.id, { include: ["parent"] }],
+    () => getTaxon(org.id, item.id),
+    {
+      enabled: !!item,
+      onSuccess: (data) => {
+        console.log(data)
+        setTaxon(data)
+      },
     },
-  })
+  )
   return (
     <>
       <EuiText>

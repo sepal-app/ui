@@ -1,5 +1,5 @@
 import firebase from "firebase/app"
-import { useMutation, useQueryCache } from "react-query"
+import { useMutation, useQueryClient } from "react-query"
 import { currentOrganization$, list as listOrganizations } from "../lib/organization"
 import {
   ProfileCreateValues,
@@ -8,13 +8,13 @@ import {
 } from "../lib/profile"
 
 export const useInitUser = () => {
-  const queryCache = useQueryCache()
+  const queryClient = useQueryClient()
   const fetchOrganizations = () =>
-    queryCache.fetchQuery("organizations", listOrganizations)
-  const fetchProfile = async () => queryCache.fetchQuery("profile", getProfile)
-  const [createProfileMutation] = useMutation((values: ProfileCreateValues) =>
-    createProfile(values),
-  )
+    queryClient.fetchQuery("organizations", listOrganizations)
+  const fetchProfile = async () => queryClient.fetchQuery("profile", getProfile)
+  const {
+    mutateAsync: createProfileMutation,
+  } = useMutation((values: ProfileCreateValues) => createProfile(values))
 
   return async (user: firebase.User) =>
     fetchProfile()

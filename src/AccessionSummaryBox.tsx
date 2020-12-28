@@ -16,12 +16,16 @@ export const AccessionSummaryBox: React.FC<Props> = ({ item }) => {
   const history = useHistory()
   const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
   const [accession, setAccession] = useState(item)
-  useQuery(["accession", org.id, item.id, { include: "taxon" }], getAccession, {
-    enabled: item,
-    onSuccess: (data) => {
-      setAccession(data)
+  useQuery(
+    ["accession", org.id, item.id, { include: "taxon" }],
+    () => getAccession(org.id, item.id),
+    {
+      enabled: !!item,
+      onSuccess: (data) => {
+        setAccession(data)
+      },
     },
-  })
+  )
 
   return (
     <>

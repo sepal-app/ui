@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { useMutation, useQuery, useQueryCache } from "react-query"
+import { useMutation, useQuery, useQueryClient } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
 import { EuiTabbedContent } from "@elastic/eui"
 import { useObservableEagerState } from "observable-hooks"
@@ -12,25 +12,29 @@ import { GeneralTab } from "./GeneralTab"
 
 export const TaxonForm: React.FC = () => {
   const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
-  const queryCache = useQueryCache()
+  const queryClient = useQueryClient()
   const params = useParams<{ id: string }>()
   const history = useHistory()
-  const { data: taxon } = useQuery(["taxon", org.id, params.id], getTaxon, {
-    enabled: org.id && params.id,
-    initialData: {
-      id: -1,
-      name: "",
-      rank: "",
-      parentId: null,
-    },
-    initialStale: true,
-  })
 
-  const [createTaxon] = useMutation((values: TaxonFormValues) =>
+  const { data: taxon } = useQuery(
+    ["taxon", org.id, params.id],
+    () => getTaxon(org.id, params.id),
+    {
+      enabled: !!(org.id && params.id),
+      initialData: {
+        id: -1,
+        name: "",
+        rank: "",
+        parentId: null,
+      },
+    },
+  )
+
+  const { mutateAsync: createTaxon } = useMutation((values: TaxonFormValues) =>
     create(org?.id ?? "", values),
   )
 
-  const [updateTaxon] = useMutation((values: TaxonFormValues) =>
+  const { mutateAsync: updateTaxon } = useMutation((values: TaxonFormValues) =>
     update(org?.id ?? "", taxon?.id ?? "", values),
   )
 
@@ -47,7 +51,7 @@ export const TaxonForm: React.FC = () => {
 
     const txn = await save
     if (txn) {
-      queryCache.setQueryData(["taxon", org.id, txn.id], txn)
+      queryClient.setQueryData(["taxon", org.id, txn.id], txn)
     }
 
     return txn as Taxon

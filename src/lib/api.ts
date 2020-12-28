@@ -18,7 +18,7 @@ const getNextLink = (headers: Headers): string | null => {
 export type ListOptions = {
   cursor?: string
   limit?: number
-  query?: string
+  query?: string | null
   include?: string[]
 }
 
@@ -51,7 +51,7 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
     ].join("?")
 
     const resp = await request(url)
-    const respData = await resp.json()
+    const data = await resp.json()
     const nextPageUrl = getNextLink(resp.headers)
     // return [respData, nextPageUrl]
     const nextCursor = nextPageUrl
@@ -60,8 +60,8 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
     // return { data: respData, nextCursor }
     console.log(`nextPageUrl: ${nextPageUrl}`)
     console.log(`nextCursor: ${nextCursor}`)
-    respData.nextCursor = nextCursor
-    return respData
+    data.nextCursor = nextCursor
+    return data
   },
 
   get: async (

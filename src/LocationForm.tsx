@@ -23,20 +23,23 @@ export const LocationForm: React.FC = () => {
   const [success, setSuccess] = useExpiringState(false, 3000)
   const history = useHistory()
   const params = useParams<{ id: string }>()
-  const { data: location } = useQuery(["location", org?.id, params.id], getLocation, {
-    enabled: org.id && params.id,
-    initialData: {
-      id: -1,
-      name: "",
-      code: "",
-      description: "",
+  const { data: location } = useQuery(
+    ["location", org?.id, params.id],
+    () => getLocation(org.id, params.id),
+    {
+      enabled: !!(org.id && params.id),
+      initialData: {
+        id: -1,
+        name: "",
+        code: "",
+        description: "",
+      },
     },
-    initialStale: true,
-  })
-  const [createLocation] = useMutation((values: LocationFormValues) =>
+  )
+  const { mutateAsync: createLocation } = useMutation((values: LocationFormValues) =>
     create(org?.id ?? "", values),
   )
-  const [updateLocation] = useMutation((values: LocationFormValues) =>
+  const { mutateAsync: updateLocation } = useMutation((values: LocationFormValues) =>
     update(org?.id ?? "", location?.id ?? "", values),
   )
 

@@ -2,18 +2,18 @@ import React from "react"
 import ReactDOM from "react-dom"
 import "./index.scss"
 import { App } from "./App"
-import { QueryCache, ReactQueryCacheProvider } from "react-query"
+import { QueryClient, QueryClientProvider } from "react-query"
 
 import { BrowserRouter } from "react-router-dom"
 import { FirebaseAuthProvider } from "./FirebaseAuthProvider"
 
-const queryCache = new QueryCache({
-  defaultConfig: {
+const queryClient = new QueryClient({
+  defaultOptions: {
     queries: {
       // By default we pass the name of the route as the first
       // parameter of the query key if we pass an array as the query key so
       // filter the name out so it doesn't get passed to the function
-      queryFnParamsFilter: (args) => (Array.isArray(args) ? args.slice(1) : args),
+      /* queryFnParamsFilter: (args) => (Array.isArray(args) ? args.slice(1) : args), */
 
       // Refetching on focus caused some weird issues where if we selected a search item
       // to show the summary box and then unfocused the window and then
@@ -36,9 +36,9 @@ ReactDOM.render(
   <React.StrictMode>
     <BrowserRouter>
       <FirebaseAuthProvider>
-        <ReactQueryCacheProvider queryCache={queryCache}>
+        <QueryClientProvider client={queryClient}>
           <App />
-        </ReactQueryCacheProvider>
+        </QueryClientProvider>
       </FirebaseAuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

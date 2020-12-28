@@ -16,8 +16,8 @@ export const Organization: React.FC = () => {
   const [inviteModalVisible, setInviteModalVisible] = useState(false)
   const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
 
-  const { data: users } = useQuery(["org", org?.id], getOrgUsers, {
-    enabled: org.id,
+  const { data: users } = useQuery(["org", org?.id], () => getOrgUsers(org.id), {
+    enabled: !!org.id,
     // initialData: {
     //   id: -1,
     //   code: "",

@@ -1,6 +1,6 @@
 import omit from "lodash/omit"
-import React, { useCallback } from "react"
-import { useMutation, useQuery, useQueryCache } from "react-query"
+import React, { useCallback, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
 import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Formik, FormikHelpers } from "formik"
@@ -24,26 +24,33 @@ export const OrganizationForm: React.FC = () => {
   const redirect = searchParams.get("redirect")
   const title = params.id ? "Edit organization" : "Create an organization"
   const history = useHistory()
-  const queryCache = useQueryCache()
+  const queryClient = useQueryClient()
   const prefetchOrganizations = useCallback(async () => {
-    await queryCache.prefetchQuery("organizations", listOrganizations)
-  }, [queryCache])
+    await queryClient.prefetchQuery("organizations", listOrganizations)
+  }, [queryClient])
+  const { register, handleSubmit, errors } = useForm<OrganizationFormValues>()
+  const [submitting, setSubmitting] = useState(false)
 
-  const { data: organization } = useQuery(["organization", params.id], getOrganization, {
-    enabled: params.id,
-    initialData: {
-      id: -1,
-      name: "",
-      shortName: "",
-      abbreviation: "",
+  const { data: organization, error: organizationError } = useQuery(
+    ["organization", params.id],
+    () => getOrganization(params.id),
+    {
+      enabled: !!params.id,
+      initialData: {
+        id: -1,
+        name: "",
+        shortName: "",
+        abbreviation: "",
+      },
     },
-    initialStale: true,
-  })
-
-  const [createOrganization] = useMutation((values: OrganizationFormValues) =>
-    create(values),
   )
-  const [updateOrganization] = useMutation((values: OrganizationFormValues) =>
+
+  const {
+    mutateAsync: createOrganization,
+  } = useMutation((values: OrganizationFormValues) => create(values))
+  const {
+    mutateAsync: updateOrganization,
+  } = useMutation((values: OrganizationFormValues) =>
     update(organization?.id ?? -1, values),
   )
 

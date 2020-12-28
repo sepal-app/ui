@@ -37,7 +37,7 @@ export const list = async (): Promise<Organization[]> =>
   await api.get<Organization[]>(basePath)
 
 export const get = async (
-  id: number,
+  id: string | number,
   options?: { expand?: string[]; include?: string[] },
 ): Promise<Organization> => {
   const params = new URLSearchParams()

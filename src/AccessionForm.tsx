@@ -24,19 +24,22 @@ export const AccessionForm: React.FC = () => {
   const params = useParams<{ id: string }>()
   const history = useHistory()
   const [success, setSuccess] = useExpiringState(false, 1000)
-  const { data: accession } = useQuery(["accession", org?.id, params.id], getAccession, {
-    enabled: org.id && params.id,
-    initialData: {
-      id: -1,
-      code: "",
-      taxonId: -1,
+  const { data: accession } = useQuery(
+    ["accession", org?.id, params.id],
+    () => getAccession(org.id, params.id),
+    {
+      enabled: !!(org.id && params.id),
+      initialData: {
+        id: -1,
+        code: "",
+        taxonId: -1,
+      },
     },
-    initialStale: true,
-  })
-  const [createAccession] = useMutation((values: AccessionFormValues) =>
+  )
+  const { mutateAsync: createAccession } = useMutation((values: AccessionFormValues) =>
     create(org?.id ?? "", values),
   )
-  const [updateAccession] = useMutation((values: AccessionFormValues) =>
+  const { mutateAsync: updateAccession } = useMutation((values: AccessionFormValues) =>
     update(org?.id ?? "", accession?.id ?? "", values),
   )
 
