@@ -1,50 +1,45 @@
 import React, { useState } from "react"
-import { EuiFlexGroup, EuiFlexItem, EuiSideNav } from "@elastic/eui"
+import { EuiFlexGroup, EuiFlexItem, EuiTab } from "@elastic/eui"
 
 import Page from "../Page"
-import { Profile } from "./Profile"
-import { Organization } from "./Organization"
+import { ProfileSettings } from "./ProfileSettings"
+import { OrganizationSettings } from "./OrganizationSettings"
 
 export const Settings: React.FC = () => {
-  const [selectedId, setSelectedId] = useState(0)
-  // const [activeComponent, setActiveComponent] = useState()
-
-  const items = [
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0)
+  const tabs = [
     {
-      title: "Profile",
-      component: <Profile />,
+      id: "profile",
+      name: "Profile",
+      disabled: false,
+      content: <ProfileSettings />,
     },
     {
-      title: "Organization",
-      component: <Organization />,
-    },
-  ]
-
-  const sideNav = [
-    {
-      name: "",
-      id: -1,
-      items: items.map(({ component, title }, i) => ({
-        id: i,
-        name: title,
-        // onClick: () => setActiveComponent(component),
-        onClick: () => setSelectedId(i),
-        isSelected: selectedId === i,
-      })),
+      id: "organizations",
+      name: "Organizations",
+      disabled: false,
+      content: <OrganizationSettings />,
     },
   ]
+
+  const renderTabs = () => {
+    return tabs.map((tab, index) => (
+      <EuiTab
+        onClick={() => setSelectedTabIndex(index)}
+        isSelected={index === selectedTabIndex}
+        disabled={tab.disabled}
+        key={index}
+      >
+        {tab.name}
+      </EuiTab>
+    ))
+  }
 
   return (
     <Page pageTitle="Settings">
-      <EuiFlexGroup>
-        <EuiFlexItem grow={false}>
-          <EuiSideNav
-            mobileTitle="Navigate within $APP_NAME"
-            style={{ width: 192 }}
-            items={sideNav}
-          />
-        </EuiFlexItem>
-        <EuiFlexItem>{items[selectedId].component}</EuiFlexItem>
+      <EuiFlexGroup gutterSize="xl">
+        <EuiFlexItem grow={false}>{renderTabs()}</EuiFlexItem>
+        <EuiFlexItem>{tabs[selectedTabIndex].content}</EuiFlexItem>
       </EuiFlexGroup>
     </Page>
   )

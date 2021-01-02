@@ -23,6 +23,7 @@ export const useAuth = () => {
     // were trying to get the state management working
     login: (email: string, password: string) =>
       auth.signInWithEmailAndPassword(email, password),
+    sendPasswordResetEmail: (email: string) => auth.sendPasswordResetEmail(email),
   }
 }
 

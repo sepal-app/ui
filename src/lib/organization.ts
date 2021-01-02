@@ -11,6 +11,11 @@ export interface Organization {
   abbreviation: string
 }
 
+export type OrganizationFormValues = Pick<
+  Organization,
+  "name" | "shortName" | "abbreviation"
+>
+
 const initialOrganizationData = localStorage.getItem(currentOrganizationKey)
 
 export const currentOrganization$ = new BehaviorSubject<Organization | null>(
@@ -27,11 +32,6 @@ currentOrganization$.subscribe((value) => {
     localStorage.removeItem(currentOrganizationKey)
   }
 })
-
-export type OrganizationFormValues = Pick<
-  Organization,
-  "name" | "shortName" | "abbreviation"
->
 
 export const list = async (): Promise<Organization[]> =>
   await api.get<Organization[]>(basePath)
