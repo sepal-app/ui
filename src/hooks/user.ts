@@ -1,6 +1,6 @@
 import firebase from "firebase/app"
 import { useMutation, useQueryClient } from "react-query"
-import { currentOrganization$, list as listOrganizations } from "../lib/organization"
+import { list as listOrganizations, useCurrentOrganization } from "../lib/organization"
 import {
   ProfileCreateValues,
   create as createProfile,
@@ -9,6 +9,7 @@ import {
 
 export const useInitUser = () => {
   const queryClient = useQueryClient()
+  const [currentOrganization, setCurrentOrganization] = useCurrentOrganization()
   const fetchOrganizations = () =>
     queryClient.fetchQuery("organizations", listOrganizations)
   const fetchProfile = async () => queryClient.fetchQuery("profile", getProfile)
@@ -29,8 +30,8 @@ export const useInitUser = () => {
       })
       .then(() => fetchOrganizations())
       .then((orgs) => {
-        if (!currentOrganization$.value && orgs) {
-          currentOrganization$.next(orgs[0])
+        if (!currentOrganization && orgs) {
+          setCurrentOrganization(orgs[0])
         }
       })
 }

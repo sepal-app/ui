@@ -1,12 +1,10 @@
 import React, { useState } from "react"
 import { useQuery } from "react-query"
 import { EuiComboBox } from "@elastic/eui"
-import { useObservableEagerState } from "observable-hooks"
 
 import { ListOptions } from "./lib/api"
-import { isNotEmpty } from "./lib/observables"
 import { Taxon, get as getTaxa, list as listTaxa } from "./lib/taxon"
-import { currentOrganization$ } from "./lib/organization"
+import { useCurrentOrganization } from "./lib/organization"
 
 interface Completion {
   label: string
@@ -19,12 +17,15 @@ interface Props {
 }
 
 export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
+  const [org] = useCurrentOrganization()
   const [selectedOption, setSelectedOption] = useState<Completion | null>(null)
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
   const [query, setQuery] = useState<string | null>()
   const { data: completions } = useQuery(
     ["taxa", org.id, { query }],
     async () => {
+      if (!org) {
+        return
+      }
       const taxa = await listTaxa(org.id, { query })
       return taxa.map((taxon) => ({ label: taxon.name, value: taxon }))
     },

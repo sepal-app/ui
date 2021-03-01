@@ -10,14 +10,15 @@ import {
   Organization,
   OrganizationFormValues,
   create,
-  currentOrganization$,
   get as getOrganization,
   list as listOrganizations,
   update,
+  useCurrentOrganization,
 } from "./lib/organization"
 import { useExpiringState, useSearchParams } from "./hooks"
 
 export const OrganizationForm: React.FC = () => {
+  const [_, setCurrentOrganization] = useCurrentOrganization()
   const params = useParams<{ id: string }>()
   const [success, setSuccess] = useExpiringState(false, 1000)
   const searchParams = useSearchParams()
@@ -62,7 +63,7 @@ export const OrganizationForm: React.FC = () => {
     try {
       const org = await save
       await prefetchOrganizations()
-      currentOrganization$.next(org as Organization)
+      setCurrentOrganization(org)
       setSuccess(true)
       if (redirect) {
         history.push(redirect)

@@ -14,21 +14,20 @@ import {
 import React, { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useMutation, useQuery } from "react-query"
-import { useObservableEagerState } from "observable-hooks"
 import { useExpiringState } from "../hooks"
-import { isNotEmpty } from "../lib/observables"
 import {
   Organization,
   OrganizationFormValues,
-  currentOrganization$,
   invite,
   users as getOrgUsers,
   update as updateOrganization,
+  useCurrentOrganization,
 } from "../lib/organization"
 import { InviteModal } from "../InviteModal/InviteModal"
 
 export const OrganizationSettings: React.FC = () => {
   const [inviteModalVisible, setInviteModalVisible] = useState(false)
+  const [org, setCurrentOrganization] = useCurrentOrganization()
 
   const [success, setSuccess] = useExpiringState(false, 1000)
   const {
@@ -41,7 +40,6 @@ export const OrganizationSettings: React.FC = () => {
     defaultValues: { name: "", shortName: "", abbreviation: "" },
     mode: "onTouched",
   })
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
 
   useEffect(() => {
     reset(org)
@@ -74,7 +72,7 @@ export const OrganizationSettings: React.FC = () => {
     console.log(values)
     try {
       const org = await saveOrganization(values)
-      currentOrganization$.next(org as Organization)
+      setCurrentOrganization(org)
     } catch (e) {
       // TODO: handle error
     } finally {

@@ -4,31 +4,30 @@ import { useMutation, useQuery } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
 import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import { useObservableEagerState } from "observable-hooks"
-import { isNotEmpty } from "./lib/observables"
 
-import Page from "./Page"
+import Page from "../Page"
 import {
   Accession,
   AccessionFormValues,
   create,
   get as getAccession,
   update,
-} from "./lib/accession"
-import { currentOrganization$ } from "./lib/organization"
-import { useExpiringState } from "./hooks"
-import { TaxonField } from "./TaxonField"
+} from "../lib/accession"
+import { useCurrentOrganization } from "../lib/organization"
+import { useExpiringState } from "../hooks"
+import { TaxonField } from "../TaxonField"
 
 export const AccessionForm: React.FC = () => {
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
+  const [org] = useCurrentOrganization()
+  console.log(org)
   const params = useParams<{ id: string }>()
   const history = useHistory()
   const [success, setSuccess] = useExpiringState(false, 1000)
   const { data: accession } = useQuery(
     ["accession", org?.id, params.id],
-    () => getAccession(org.id, params.id),
+    () => (org ? getAccession(org?.id, params.id) : undefined),
     {
-      enabled: !!(org.id && params.id),
+      enabled: !!(org?.id && params.id),
       initialData: {
         id: -1,
         code: "",

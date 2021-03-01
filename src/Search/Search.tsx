@@ -1,5 +1,4 @@
 import flatMap from "lodash/flatMap"
-import { useObservableEagerState } from "observable-hooks"
 import React, { useState } from "react"
 import { useInfiniteQuery } from "react-query"
 import {
@@ -12,10 +11,9 @@ import {
 
 import Page from "../Page"
 import { useSearchParams } from "../hooks/params"
-import { isNotEmpty } from "../lib/observables"
 import { Taxon, list as listTaxa } from "../lib/taxon"
 import { TaxonSummaryBox } from "../TaxonSummaryBox"
-import { currentOrganization$ } from "../lib/organization"
+import { useCurrentOrganization } from "../lib/organization"
 import { Accession, list as listAccessions } from "../lib/accession"
 import { AccessionSummaryBox } from "../AccessionSummaryBox"
 import { ListOptions, ListResponse } from "../lib/api"
@@ -27,7 +25,7 @@ const pageSize = 4
 export const Search: React.FC = () => {
   const [selected, setSelected] = useState<SearchResultItem | null>(null)
   const [selectedType, setSelectedType] = useState<string | null>(null)
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
+  const [org] = useCurrentOrganization()
   const searchParams = useSearchParams()
   const q = searchParams.get("q")
 

@@ -1,4 +1,4 @@
-import { BehaviorSubject } from "rxjs"
+import { useQueryClient } from "react-query"
 import * as api from "./api"
 
 const basePath = "/v1/orgs"
@@ -16,22 +16,22 @@ export type OrganizationFormValues = Pick<
   "name" | "shortName" | "abbreviation"
 >
 
-const initialOrganizationData = localStorage.getItem(currentOrganizationKey)
-
-export const currentOrganization$ = new BehaviorSubject<Organization | null>(
-  initialOrganizationData ? JSON.parse(initialOrganizationData) : null,
-  // : initialUserData
-  // ? JSON.parse(initialUserData).organizations?.[0]
-  // : null,
-)
-
-currentOrganization$.subscribe((value) => {
-  if (value) {
-    localStorage.setItem(currentOrganizationKey, JSON.stringify(value))
-  } else {
-    localStorage.removeItem(currentOrganizationKey)
+export const useCurrentOrganization = (): [Organization, (org: Organization) => void] => {
+  const queryClient = useQueryClient()
+  const org = queryClient.getQueryData("currentOrganization")
+  if (!org) {
+    const initialData = localStorage.getItem(currentOrganizationKey)
+    if (initialData) {
+      queryClient.setQueryData("currentOrganization", JSON.parse(initialData))
+    }
   }
-})
+  const setter = (value: Organization) => {
+    queryClient.setQueryData("currentOrganization", value)
+  }
+
+  // TODO: don't force type, just make sure it exists
+  return [org as Organization, setter]
+}
 
 export const list = async (): Promise<Organization[]> =>
   await api.get<Organization[]>(basePath)

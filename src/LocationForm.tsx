@@ -1,9 +1,8 @@
 import omit from "lodash/omit"
-import React, { useEffect } from "react"
+import React from "react"
 import { useMutation, useQuery } from "react-query"
 import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
-import { useObservableEagerState } from "observable-hooks"
 import { useHistory, useParams } from "react-router-dom"
 
 import Page from "./Page"
@@ -14,12 +13,11 @@ import {
   get as getLocation,
   update,
 } from "./lib/location"
-import { currentOrganization$ } from "./lib/organization"
-import { isNotEmpty } from "./lib/observables"
+import { useCurrentOrganization } from "./lib/organization"
 import { useExpiringState } from "./hooks"
 
 export const LocationForm: React.FC = () => {
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
+  const [org] = useCurrentOrganization()
   const [success, setSuccess] = useExpiringState(false, 3000)
   const history = useHistory()
   const params = useParams<{ id: string }>()

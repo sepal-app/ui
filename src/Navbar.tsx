@@ -16,12 +16,10 @@ import {
   EuiSuperSelect,
   EuiText,
 } from "@elastic/eui"
-import { useObservableEagerState } from "observable-hooks"
-import { isNotEmpty } from "./lib/observables"
 
 import {
   Organization,
-  currentOrganization$,
+  useCurrentOrganization,
   // list as listOrganizations,
 } from "./lib/organization"
 
@@ -38,12 +36,8 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [, setShowOrgMenu] = useState(false)
   const queryClient = useQueryClient()
-
   const organizations = queryClient.getQueryData<Organization[]>("organizations")
-
-  const currentOrganization = useObservableEagerState(
-    currentOrganization$.pipe(isNotEmpty()),
-  )
+  const [currentOrganization, setCurrentOrganization] = useCurrentOrganization()
 
   function renderLogo() {
     return (
@@ -85,7 +79,8 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   function renderOrgMenu() {
     function onChange(value: number) {
       const org = organizations?.find((org) => org.id === value)
-      currentOrganization$.next(org as Organization)
+      // TODO: we should always find an organization...is it worth showing an error here if we don't
+      setCurrentOrganization(org as Organization)
     }
 
     const options =

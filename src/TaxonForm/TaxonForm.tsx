@@ -2,16 +2,14 @@ import React, { useState, useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
 import { EuiTabbedContent } from "@elastic/eui"
-import { useObservableEagerState } from "observable-hooks"
 
 import Page from "../Page"
 import { Taxon, TaxonFormValues, create, get as getTaxon, update } from "../lib/taxon"
-import { currentOrganization$ } from "../lib/organization"
-import { isNotEmpty } from "../lib/observables"
+import { useCurrentOrganization } from "../lib/organization"
 import { GeneralTab } from "./GeneralTab"
 
 export const TaxonForm: React.FC = () => {
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
+  const [org] = useCurrentOrganization()
   const queryClient = useQueryClient()
   const params = useParams<{ id: string }>()
   const history = useHistory()

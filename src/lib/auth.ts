@@ -1,6 +1,6 @@
 import firebase from "firebase/app"
 import { useEffect, useState } from "react"
-import { currentOrganization$ } from "./organization"
+import { queryClient } from "../cache"
 
 export const useAuth = () => {
   const auth = firebase.auth()
@@ -32,6 +32,6 @@ export const signup = async (email: string, password: string) => {
 }
 
 export const logout = async () => {
-  currentOrganization$.next(null)
+  queryClient.clear()
   return await firebase.auth().signOut()
 }

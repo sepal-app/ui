@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { useQuery } from "react-query"
 import { EuiButtonEmpty, EuiFlexGroup, EuiFlexItem, EuiText } from "@elastic/eui"
-import { useObservableEagerState } from "observable-hooks"
 import { useHistory } from "react-router-dom"
 
 import { Taxon, get as getTaxon } from "./lib/taxon"
-import { currentOrganization$ } from "./lib/organization"
-import { isNotEmpty } from "./lib/observables"
+import { useCurrentOrganization } from "./lib/organization"
 
 interface Props {
   item: Taxon
@@ -14,7 +12,7 @@ interface Props {
 
 export const TaxonSummaryBox: React.FC<Props> = ({ item }) => {
   const history = useHistory()
-  const org = useObservableEagerState(currentOrganization$.pipe(isNotEmpty()))
+  const [org] = useCurrentOrganization()
   const [taxon, setTaxon] = useState(item)
 
   useQuery(
