@@ -1,9 +1,7 @@
-import omit from "lodash/omit"
-import React from "react"
-import { useMutation, useQuery } from "react-query"
+import React, { useState, useEffect } from "react"
+import { useMutation, useQuery, useQueryClient } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
-import { EuiButton, EuiFieldText, EuiForm, EuiFormRow, EuiTextColor } from "@elastic/eui"
-import { Form, Formik, FormikHelpers } from "formik"
+import { EuiTabbedContent } from "@elastic/eui"
 
 import Page from "../Page"
 import {
@@ -14,97 +12,72 @@ import {
   update,
 } from "../lib/accession"
 import { useCurrentOrganization } from "../lib/organization"
-import { useExpiringState } from "../hooks"
-import { TaxonField } from "../TaxonField"
+import { GeneralTab } from "./GeneralTab"
 
 export const AccessionForm: React.FC = () => {
   const [org] = useCurrentOrganization()
-  console.log(org)
+  const queryClient = useQueryClient()
   const params = useParams<{ id: string }>()
   const history = useHistory()
-  const [success, setSuccess] = useExpiringState(false, 1000)
+
   const { data: accession } = useQuery(
-    ["accession", org?.id, params.id],
-    () => (org ? getAccession(org?.id, params.id) : undefined),
+    ["accession", org.id, params.id],
+    () => getAccession([org.id, params.id]),
     {
-      enabled: !!(org?.id && params.id),
+      enabled: !!(org.id && params.id),
       initialData: {
-        id: -1,
+        id: "",
         code: "",
-        taxonId: -1,
+        taxonId: "",
       },
     },
   )
+
   const { mutateAsync: createAccession } = useMutation((values: AccessionFormValues) =>
-    create(org?.id ?? "", values),
-  )
-  const { mutateAsync: updateAccession } = useMutation((values: AccessionFormValues) =>
-    update(org?.id ?? "", accession?.id ?? "", values),
+    create([org?.id ?? ""], values),
   )
 
-  const handleSubmit = async (
-    values: AccessionFormValues,
-    { setSubmitting }: FormikHelpers<AccessionFormValues>,
-  ) => {
+  const { mutateAsync: updateAccession } = useMutation((values: AccessionFormValues) =>
+    update([org?.id ?? "", accession?.id ?? ""], values),
+  )
+
+  const onSubmit = async (values: AccessionFormValues): Promise<Accession> => {
     const save = params.id
       ? updateAccession(values)
-      : createAccession(values).then((acc) => {
-          if (acc?.id) {
-            history.push(`/accession/${acc.id}`)
+      : createAccession(values).then((txn) => {
+          if (txn?.id) {
+            history.push(`/accession/${txn.id}`)
             history.goForward()
           }
-          return acc
+          return txn
         })
 
-    try {
-      await save
-      setSuccess(true)
-    } catch (e) {
-      console.log(e)
-    } finally {
-      setSubmitting(false)
+    const txn = await save
+    if (txn) {
+      queryClient.setQueryData(["accession", org.id, txn.id], txn)
     }
+
+    return txn as Accession
   }
 
+  if (!accession) {
+    // TODO: this was put here temporary b/c accession is null
+    return null
+  }
+
+  const tabs = [
+    {
+      id: "general",
+      name: "General",
+      content: <GeneralTab accession={accession} onSubmit={onSubmit} />,
+    },
+    { id: "other", name: "Other", content: <></> },
+  ]
+
+  // TODO: don't allow changing tabs unless the form is saved
   return (
-    <Page contentTitle="Accession form">
-      <Formik<AccessionFormValues>
-        enableReinitialize={true}
-        onSubmit={handleSubmit}
-        initialValues={omit(accession, ["id"]) as Accession}
-      >
-        {({ values, handleChange }) => (
-          <Form>
-            <EuiForm>
-              <EuiFormRow label="Code">
-                <EuiFieldText
-                  name="code"
-                  onChange={handleChange}
-                  value={values.code || ""}
-                />
-              </EuiFormRow>
-              <EuiFormRow label="Taxon">
-                <TaxonField
-                  value={values.taxonId}
-                  onChange={(taxon) => {
-                    handleChange("taxonId")(taxon?.id.toString() ?? "")
-                  }}
-                />
-              </EuiFormRow>
-              <div style={{ marginTop: "20px" }}>
-                <EuiButton fill type="submit">
-                  Save
-                </EuiButton>
-                {success && (
-                  <EuiTextColor color="secondary" style={{ marginLeft: "20px" }}>
-                    Success!
-                  </EuiTextColor>
-                )}
-              </div>
-            </EuiForm>
-          </Form>
-        )}
-      </Formik>
+    <Page contentTitle={accession.id ? accession.code : "New accession"}>
+      <EuiTabbedContent tabs={tabs} />
     </Page>
   )
 }

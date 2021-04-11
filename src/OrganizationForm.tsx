@@ -37,7 +37,7 @@ export const OrganizationForm: React.FC = () => {
     {
       enabled: !!params.id,
       initialData: {
-        id: -1,
+        id: "",
         name: "",
         shortName: "",
         abbreviation: "",
@@ -51,7 +51,7 @@ export const OrganizationForm: React.FC = () => {
   const {
     mutateAsync: updateOrganization,
   } = useMutation((values: OrganizationFormValues) =>
-    update(organization?.id ?? -1, values),
+    update(organization?.id ?? "", values),
   )
 
   const onSubmit = async (

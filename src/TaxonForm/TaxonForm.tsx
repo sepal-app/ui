@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React from "react"
 import { useMutation, useQuery, useQueryClient } from "react-query"
 import { useHistory, useParams } from "react-router-dom"
 import { EuiTabbedContent } from "@elastic/eui"
@@ -16,11 +16,11 @@ export const TaxonForm: React.FC = () => {
 
   const { data: taxon } = useQuery(
     ["taxon", org.id, params.id],
-    () => getTaxon(org.id, params.id),
+    () => getTaxon([org.id, params.id]),
     {
       enabled: !!(org.id && params.id),
       initialData: {
-        id: -1,
+        id: "",
         name: "",
         rank: "",
         parentId: null,
@@ -29,11 +29,11 @@ export const TaxonForm: React.FC = () => {
   )
 
   const { mutateAsync: createTaxon } = useMutation((values: TaxonFormValues) =>
-    create(org?.id ?? "", values),
+    create([org?.id ?? ""], values),
   )
 
   const { mutateAsync: updateTaxon } = useMutation((values: TaxonFormValues) =>
-    update(org?.id ?? "", taxon?.id ?? "", values),
+    update([org?.id ?? "", taxon?.id ?? ""], values),
   )
 
   const onSubmit = async (values: TaxonFormValues): Promise<Taxon> => {

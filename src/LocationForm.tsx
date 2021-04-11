@@ -23,11 +23,11 @@ export const LocationForm: React.FC = () => {
   const params = useParams<{ id: string }>()
   const { data: location } = useQuery(
     ["location", org?.id, params.id],
-    () => getLocation(org.id, params.id),
+    () => getLocation([org.id, params.id]),
     {
       enabled: !!(org.id && params.id),
       initialData: {
-        id: -1,
+        id: "",
         name: "",
         code: "",
         description: "",
@@ -35,10 +35,10 @@ export const LocationForm: React.FC = () => {
     },
   )
   const { mutateAsync: createLocation } = useMutation((values: LocationFormValues) =>
-    create(org?.id ?? "", values),
+    create([org?.id ?? ""], values),
   )
   const { mutateAsync: updateLocation } = useMutation((values: LocationFormValues) =>
-    update(org?.id ?? "", location?.id ?? "", values),
+    update([org?.id ?? "", location?.id ?? ""], values),
   )
 
   // useEffect(() => {

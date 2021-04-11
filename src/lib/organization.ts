@@ -5,7 +5,7 @@ const basePath = "/v1/orgs"
 const currentOrganizationKey = "current_organization"
 
 export interface Organization {
-  id: number
+  id: string
   name: string
   shortName: string
   abbreviation: string
@@ -36,8 +36,10 @@ export const useCurrentOrganization = (): [Organization, (org: Organization) => 
 export const list = async (): Promise<Organization[]> =>
   await api.get<Organization[]>(basePath)
 
+// TODO: now that we the ids are an array we should be able to use makeResource
+
 export const get = async (
-  id: string | number,
+  id: string,
   options?: { expand?: string[]; include?: string[] },
 ): Promise<Organization> => {
   const params = new URLSearchParams()
@@ -56,19 +58,19 @@ export const create = async (data: OrganizationFormValues): Promise<Organization
   await api.post<Organization, OrganizationFormValues>(basePath, data)
 
 export const update = async (
-  id: number,
+  id: string,
   data: OrganizationFormValues,
 ): Promise<Organization> => {
   const path = [basePath, id].join("/").concat("/")
   return await api.patch<Organization, OrganizationFormValues>(path, data)
 }
 
-export const users = async (id: number): Promise<Organization[]> => {
+export const users = async (id: string): Promise<Organization[]> => {
   const path = [basePath, id, "users"].join("/")
   return await api.get<Organization[]>(path)
 }
 
-export const invite = async (id: number, emails: string[]): Promise<Response> => {
+export const invite = async (id: string, emails: string[]): Promise<Response> => {
   const path = [basePath, id, "invite"].join("/")
   return api.post(path, { emails })
 }

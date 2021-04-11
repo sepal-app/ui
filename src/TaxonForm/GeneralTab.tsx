@@ -7,6 +7,7 @@ import {
   EuiForm,
   EuiFormRow,
   EuiTextColor,
+  EuiSpacer,
 } from "@elastic/eui"
 import { Form, Formik, FormikHelpers } from "formik"
 import _ from "lodash"
@@ -64,63 +65,66 @@ export const GeneralTab: React.FC<Props> = ({ taxon, onSubmit }) => {
   }
 
   return (
-    <Formik<TaxonFormValues>
-      enableReinitialize={true}
-      initialValues={omit(taxon, ["id"]) as Taxon}
-      onSubmit={handleSubmit}
-      validationSchema={GeneralTabSchema}
-    >
-      {({ handleChange, dirty, isSubmitting, isValid, values }) => (
-        <Form>
-          <EuiForm>
-            <EuiFormRow label="Name">
-              <EuiFieldText
-                name="name"
-                value={values.name || ""}
-                onChange={handleChange}
-              />
-            </EuiFormRow>
-            <EuiFormRow label="Parent">
-              <TaxonField
-                value={values.parentId}
-                onChange={(taxon) => {
-                  console.log("onChange()")
-                  console.log(taxon)
-                  handleChange("parentId")(taxon?.id.toString() ?? "")
-                }}
-              />
-            </EuiFormRow>
-            <EuiFormRow label="Rank">
-              <EuiComboBox<Rank>
-                placeholder="Select a taxonomic rank"
-                singleSelection={{ asPlainText: true }}
-                options={rankOptions}
-                selectedOptions={selectedRankOption ? [selectedRankOption] : []}
-                onChange={(options) => {
-                  const option = options?.[0]
-                  handleChange("rank")(option ? (option.value as string) : "")
-                  setSelectedRankOption(option as RankOption)
-                }}
-              />
-            </EuiFormRow>
-            <div style={{ marginTop: "20px" }}>
-              <EuiButton
-                fill
-                isDisabled={!dirty || !isValid || isSubmitting}
-                isLoading={isSubmitting}
-                type="submit"
-              >
-                Save
-              </EuiButton>
-              {success && (
-                <EuiTextColor color="secondary" style={{ marginLeft: "20px" }}>
-                  Success!
-                </EuiTextColor>
-              )}
-            </div>
-          </EuiForm>
-        </Form>
-      )}
-    </Formik>
+    <>
+      <EuiSpacer size="l" />
+      <Formik<TaxonFormValues>
+        enableReinitialize={true}
+        initialValues={omit(taxon, ["id"]) as Taxon}
+        onSubmit={handleSubmit}
+        validationSchema={GeneralTabSchema}
+      >
+        {({ handleChange, dirty, isSubmitting, isValid, values }) => (
+          <Form>
+            <EuiForm>
+              <EuiFormRow label="Name">
+                <EuiFieldText
+                  name="name"
+                  value={values.name || ""}
+                  onChange={handleChange}
+                />
+              </EuiFormRow>
+              <EuiFormRow label="Parent">
+                <TaxonField
+                  value={values.parentId}
+                  onChange={(taxon) => {
+                    console.log("onChange()")
+                    console.log(taxon)
+                    handleChange("parentId")(taxon?.id.toString() ?? "")
+                  }}
+                />
+              </EuiFormRow>
+              <EuiFormRow label="Rank">
+                <EuiComboBox<Rank>
+                  placeholder="Select a taxonomic rank"
+                  singleSelection={{ asPlainText: true }}
+                  options={rankOptions}
+                  selectedOptions={selectedRankOption ? [selectedRankOption] : []}
+                  onChange={(options) => {
+                    const option = options?.[0]
+                    handleChange("rank")(option ? (option.value as string) : "")
+                    setSelectedRankOption(option as RankOption)
+                  }}
+                />
+              </EuiFormRow>
+              <div style={{ marginTop: "20px" }}>
+                <EuiButton
+                  fill
+                  isDisabled={!dirty || !isValid || isSubmitting}
+                  isLoading={isSubmitting}
+                  type="submit"
+                >
+                  Save
+                </EuiButton>
+                {success && (
+                  <EuiTextColor color="secondary" style={{ marginLeft: "20px" }}>
+                    Success!
+                  </EuiTextColor>
+                )}
+              </div>
+            </EuiForm>
+          </Form>
+        )}
+      </Formik>
+    </>
   )
 }

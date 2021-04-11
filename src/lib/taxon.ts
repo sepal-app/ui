@@ -1,14 +1,14 @@
 import * as api from "./api"
 
-function basePath(orgId: string | number) {
-  return `/v1/orgs/${orgId}/taxa`
+function basePath([orgId, taxonId]: string[]) {
+  return taxonId ? `/v1/orgs/${orgId}/taxa/${taxonId}` : `/v1/orgs/${orgId}/taxa`
 }
 
 export interface Taxon {
-  id: number
+  id: string
   name: string
   rank: string
-  parentId: number | null
+  parentId: string | null
 
   parent?: Taxon
 }
@@ -19,7 +19,7 @@ export const { create, get, list, update } = api.makeResource<Taxon, TaxonFormVa
   basePath,
 )
 
-export const meta = (orgId: number) => {
-  const path = [basePath(orgId), "meta"].join("/").concat("/")
+export const meta = (ids: string[]) => {
+  const path = [basePath(ids), "meta"].join("/").concat("/")
   return api.get(path)
 }

@@ -77,7 +77,7 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
   }
 
   function renderOrgMenu() {
-    function onChange(value: number) {
+    function onChange(value: string) {
       const org = organizations?.find((org) => org.id === value)
       // TODO: we should always find an organization...is it worth showing an error here if we don't
       setCurrentOrganization(org as Organization)
@@ -97,7 +97,7 @@ export const Navbar: React.FC<Props> = ({ hideAddMenu, hideSearch, hideOrgMenu }
       <EuiSuperSelect
         options={options}
         valueOfSelected={currentOrganization?.id.toString() ?? ""}
-        onChange={(value) => onChange(parseInt(value))}
+        onChange={(value) => onChange(value)}
       />
     )
   }

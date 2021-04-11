@@ -1,11 +1,13 @@
 import * as api from "./api"
 
-function basePath(orgId: string | number) {
-  return `/v1/orgs/${orgId}/locations`
+function basePath([orgId, locationId]: string[]) {
+  return locationId
+    ? `/v1/orgs/${orgId}/locations/${locationId}`
+    : `/v1/orgs/${orgId}/locations`
 }
 
 export interface Location {
-  id: number
+  id: string
   code: string
   name: string
   description: string

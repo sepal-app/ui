@@ -17,7 +17,7 @@ export const TaxonSummaryBox: React.FC<Props> = ({ item }) => {
 
   useQuery(
     ["taxon", org.id, item.id, { include: ["parent"] }],
-    () => getTaxon(org.id, item.id),
+    () => getTaxon([org.id, item.id]),
     {
       enabled: !!item,
       onSuccess: (data) => {

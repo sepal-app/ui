@@ -15,7 +15,7 @@ import { invite } from "../lib/organization"
 
 interface Props {
   onClose: () => void
-  orgId: number
+  orgId: string
   visible: boolean
 }
 

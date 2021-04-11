@@ -12,7 +12,7 @@ interface Completion {
 }
 
 interface Props {
-  value: number | null
+  value: string | null
   onChange: (taxon: Taxon | null) => void
 }
 
@@ -26,7 +26,7 @@ export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
       if (!org) {
         return
       }
-      const taxa = await listTaxa(org.id, { query })
+      const taxa = await listTaxa([org.id], { query })
       return taxa.map((taxon) => ({ label: taxon.name, value: taxon }))
     },
     {
@@ -34,8 +34,8 @@ export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
     },
   )
 
-  useQuery(["taxa", org.id, value], () => getTaxa(org.id, value as number), {
-    enabled: !!(value && value > 0),
+  useQuery(["taxa", org.id, value], () => getTaxa([org.id, value as string]), {
+    enabled: !!value && !!value.length,
     onSuccess: (taxon) => {
       setSelectedOption({ label: taxon.name, value: taxon })
     },

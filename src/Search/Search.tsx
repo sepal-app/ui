@@ -37,7 +37,7 @@ export const Search: React.FC = () => {
     ["taxa", org?.id, { limit: pageSize, query: q }],
     async ({ pageParam: cursor }) => {
       const opts = cursor ? { cursor } : undefined
-      return await listTaxa(org.id, opts)
+      return await listTaxa([org.id], opts)
     },
     {
       enabled: !!(org && q),
@@ -54,7 +54,7 @@ export const Search: React.FC = () => {
   } = useInfiniteQuery(
     ["accessions", org?.id, { limit: pageSize, query: q, include: ["taxon"] }],
     ({ pageParam: cursor }) =>
-      listAccessions(org.id, { cursor, include: ["taxon"], limit: pageSize, query: q }),
+      listAccessions([org.id], { cursor, include: ["taxon"], limit: pageSize, query: q }),
     {
       enabled: !!(org && q),
       getNextPageParam: (lastPage) => lastPage.nextCursor,

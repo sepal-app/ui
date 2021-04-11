@@ -16,7 +16,7 @@ export const AccessionSummaryBox: React.FC<Props> = ({ item }) => {
   const [accession, setAccession] = useState(item)
   useQuery(
     ["accession", org.id, item.id, { include: "taxon" }],
-    () => getAccession(org.id, item.id),
+    () => getAccession([org.id, item.id]),
     {
       enabled: !!item,
       onSuccess: (data) => {

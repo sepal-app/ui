@@ -24,9 +24,11 @@ export type ListOptions = {
 
 export type ListResponse<T> = T[] & { nextCursor: string | null }
 
-export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => string) => ({
+export type PathTemplate = (ids: string[]) => string
+
+export const makeResource = <T, F>(pathTemplate: PathTemplate) => ({
   list: async (
-    orgId: string | number,
+    ids: string[],
     { cursor = undefined, limit = 50, query = undefined, include }: ListOptions = {},
   ): Promise<ListResponse<T>> => {
     const params = new URLSearchParams()
@@ -45,10 +47,9 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
       }
     }
 
-    let url: string | null = [
-      baseUrl.concat(pathTemplate(orgId)),
-      params.toString(),
-    ].join("?")
+    let url: string | null = [baseUrl.concat(pathTemplate(ids)), params.toString()].join(
+      "?",
+    )
 
     const resp = await request(url)
     const data = await resp.json()
@@ -64,27 +65,23 @@ export const makeResource = <T, F>(pathTemplate: (orgId: string | number) => str
     return data
   },
 
-  get: async (
-    orgId: string | number,
-    id: string | number,
-    options?: { include?: string[] },
-  ): Promise<T> => {
+  get: async (ids: string[], options?: { include?: string[] }): Promise<T> => {
     const params = new URLSearchParams()
     if (options && !!options.include) {
       params.append("include", options.include.join(","))
     }
     const queryParams = "?".concat(params.toString())
-    const path = [pathTemplate(orgId), id].join("/").concat(queryParams)
+    const path = pathTemplate(ids).concat(queryParams)
     return get<T>(path)
   },
 
-  create: async (orgId: string | number, data: F): Promise<T> => {
-    const path = pathTemplate(orgId)
+  create: async (ids: string[], data: F): Promise<T> => {
+    const path = pathTemplate(ids)
     return post<T, F>(path, data)
   },
 
-  update: async (orgId: string | number, id: string | number, data: F): Promise<T> => {
-    const path = [pathTemplate(orgId), id].join("/")
+  update: async (ids: string[], data: F): Promise<T> => {
+    const path = pathTemplate(ids)
     return patch<T, F>(path, data)
   },
 })
