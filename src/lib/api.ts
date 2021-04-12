@@ -52,15 +52,15 @@ export const makeResource = <T, F>(pathTemplate: PathTemplate) => ({
     )
 
     const resp = await request(url)
-    const data = await resp.json()
+    const respData = await resp.json()
+    const data = Array.isArray(respData)
+      ? ((respData.map((d) => toCamelCase(d)) as unknown) as ListResponse<T>)
+      : toCamelCase<ListResponse<T>>(respData)
+
     const nextPageUrl = getNextLink(resp.headers)
-    // return [respData, nextPageUrl]
     const nextCursor = nextPageUrl
       ? new URL(nextPageUrl).searchParams.get("cursor")
       : null
-    // return { data: respData, nextCursor }
-    console.log(`nextPageUrl: ${nextPageUrl}`)
-    console.log(`nextCursor: ${nextCursor}`)
     data.nextCursor = nextCursor
     return data
   },
@@ -122,6 +122,7 @@ export const request = async (url: string, options?: RequestInit): Promise<Respo
 export const get = async <T>(path: string): Promise<T> => {
   const resp = await request(baseUrl.concat(path), { method: "GET" })
   const respData = await resp.json()
+
   return Array.isArray(respData)
     ? ((respData.map((d) => toCamelCase(d)) as unknown) as T)
     : toCamelCase<T>(respData)

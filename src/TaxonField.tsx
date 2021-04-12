@@ -3,7 +3,7 @@ import { useQuery } from "react-query"
 import { EuiComboBox } from "@elastic/eui"
 
 import { ListOptions } from "./lib/api"
-import { Taxon, get as getTaxa, list as listTaxa } from "./lib/taxon"
+import { Taxon, get as getTaxon, list as listTaxa } from "./lib/taxon"
 import { useCurrentOrganization } from "./lib/organization"
 
 interface Completion {
@@ -34,7 +34,7 @@ export const TaxonField: React.FC<Props> = ({ onChange, value, ...props }) => {
     },
   )
 
-  useQuery(["taxa", org.id, value], () => getTaxa([org.id, value as string]), {
+  useQuery(["taxa", org.id, value], () => getTaxon([org.id, value as string]), {
     enabled: !!value && !!value.length,
     onSuccess: (taxon) => {
       setSelectedOption({ label: taxon.name, value: taxon })

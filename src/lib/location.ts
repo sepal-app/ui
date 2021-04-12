@@ -15,6 +15,7 @@ export interface Location {
 
 export type LocationFormValues = Pick<Location, "code" | "name" | "description">
 
-export const { get, create, update } = api.makeResource<Location, LocationFormValues>(
-  basePath,
-)
+export const { get, create, list, update } = api.makeResource<
+  Location,
+  LocationFormValues
+>(basePath)

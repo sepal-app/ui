@@ -21,16 +21,23 @@ export interface Accession {
   taxon?: Taxon
 }
 
+export type ItemType = "plant" | "seed" | "vegetative" | "tissue" | "other"
+
 export interface AccessionItem {
   id: string
   code: string
+  itemType: ItemType
   accessionId: string
+  locationId: string
 
   accession?: Accession
 }
 
 export type AccessionFormValues = Pick<Accession, "code" | "taxonId">
-export type AccessionItemFormValues = Pick<AccessionItem, "code" | "accessionId">
+export type AccessionItemFormValues = Pick<
+  AccessionItem,
+  "accessionId" | "code" | "itemType" | "locationId"
+>
 
 export const { create, get, list, update } = api.makeResource<
   Accession,
@@ -44,7 +51,6 @@ export const meta = (orgId: string) => {
 
 export const {
   create: createItem,
-  get: getItem,
   list: listItems,
   update: updateItem,
-} = api.makeResource<AccessionItem, AccessionFormValues>(itemsBasePath)
+} = api.makeResource<AccessionItem, AccessionItemFormValues>(itemsBasePath)

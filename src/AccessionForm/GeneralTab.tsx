@@ -30,7 +30,6 @@ interface Props {
 
 export const GeneralTab: React.FC<Props> = ({ accession, onSubmit }) => {
   const [org] = useCurrentOrganization()
-  console.log(org)
   const params = useParams<{ id: string }>()
   const history = useHistory()
   const [success, setSuccess] = useExpiringState(false, 1000)
